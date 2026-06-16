@@ -138,16 +138,12 @@ def _create_random_pointcloud(cam_infos, num_points=100_000):
     GS-IR optimises Gaussian positions during training, so random init is a
     valid starting seed (this is what the Blender/synthetic reader does too).
     """
-    # Estimate scene bounds from camera positions
+    # Estimate scene bounds from camera positions.
+    # 3DGS stores R = W2C_R^T and T = W2C_T.
+    # Camera center in world = -W2C_R^T @ W2C_T = -R @ T.
     cam_centers = []
     for cam in cam_infos:
-        # camera center in world = -R^T @ T  (R here already transposed)
-        # In 3DGS convention, R is W2C rotation transposed, so:
-        R = cam.R
-        T = cam.T
-        # world-to-camera: Xc = R^T... careful. Reconstruct C2W center:
-        Rt = np.transpose(R)
-        center = -Rt @ T
+        center = -cam.R @ cam.T
         cam_centers.append(center)
     cam_centers = np.stack(cam_centers, axis=0)
 
