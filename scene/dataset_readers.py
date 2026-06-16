@@ -28,6 +28,7 @@ from scene.colmap_loader import (
     read_points3D_binary,
     read_points3D_text,
 )
+from scene.nerfosr_reader import readNeRFOSRSceneInfo
 from scene.gaussian_model import BasicPointCloud
 from utils.graphics_utils import focal2fov, fov2focal, getWorld2View2
 from utils.sh_utils import SH2RGB
@@ -322,5 +323,8 @@ def readNerfSyntheticInfo(
     )
     return scene_info
 
-
-sceneLoadTypeCallbacks = {"Colmap": readColmapSceneInfo, "Blender": readNerfSyntheticInfo}
+sceneLoadTypeCallbacks = {
+    "Colmap": readColmapSceneInfo,
+    "Blender": readNerfSyntheticInfo,
+    "NeRFOSR": readNeRFOSRSceneInfo,
+}

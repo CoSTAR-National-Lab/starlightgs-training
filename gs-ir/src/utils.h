@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <math.h>
 #include <vector_functions.h>
 #include <vector_types.h>
