@@ -214,7 +214,17 @@ def readNeRFOSRSceneInfo(path, images=None, eval=True, **kwargs):
     print("Reading NeRF-OSR train cameras...")
     train_cam_infos = readNeRFOSRCameras(train_dir, flip_yz=flip_yz, force_wh=force)
 
-    if eval and os.path.exists(test_dir):
+    # DIAGNOSTIC: same-session holdout. Instead of the cross-session test/ folder,
+    # hold out every Nth TRAIN image as test (mirrors COLMAP's llffhold). Lets us
+    # measure generalisation to nearby same-session views, isolating reader/geometry
+    # quality from the cross-session difficulty of the real test/ split.
+    holdout = os.environ.get("NERFOSR_SELF_HOLDOUT")
+    if eval and holdout:
+        n = int(holdout) if holdout.isdigit() else 8
+        test_cam_infos = [c for i, c in enumerate(train_cam_infos) if i % n == 0]
+        train_cam_infos = [c for i, c in enumerate(train_cam_infos) if i % n != 0]
+        print(f"[NeRF-OSR] SELF-HOLDOUT every {n}: train={len(train_cam_infos)} test={len(test_cam_infos)}")
+    elif eval and os.path.exists(test_dir):
         print("Reading NeRF-OSR test cameras...")
         test_cam_infos = readNeRFOSRCameras(test_dir, flip_yz=flip_yz, force_wh=force)
     else:
