@@ -103,6 +103,8 @@ def render_set(
         gt_image = view.original_image.cuda()
         alpha_mask = view.gt_alpha_mask.cuda()
         gt_image = (gt_image * alpha_mask + background[:, None, None] * (1.0 - alpha_mask)).clamp(0.0, 1.0)
+        torchvision.utils.save_image(rendering_result["render"].clamp(0.0, 1.0), os.path.join(render_path, f"{idx:05d}.png"))
+        torchvision.utils.save_image(gt_image, os.path.join(gts_path, f"{idx:05d}.png"))
         depth_map = rendering_result["depth_map"]
 
         depth_img = viridis_cmap(depth_map.squeeze().cpu().numpy())
