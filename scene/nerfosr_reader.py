@@ -224,15 +224,36 @@ def readNeRFOSRSceneInfo(path, images=None, eval=True, **kwargs):
     nerf_normalization = getNerfppNorm(train_cam_infos)
 
     # --- Initial point cloud ---
+    # Prefer COLMAP-triangulated points (generated via point_triangulator with GT poses)
+    # because they lie on actual surfaces, giving much better Gaussian initialisation.
+    # Fall back to random init if not present.
+    triangulated_bin = os.path.join(path, "colmap_triangulated", "sparse_triangulated", "points3D.bin")
     ply_path = os.path.join(path, "points3d_random.ply")
-    if not os.path.exists(ply_path):
-        print("Generating random initial point cloud (100k points)...")
-        pcd = _create_random_pointcloud(train_cam_infos, num_points=100_000)
-        storePly(ply_path, pcd.points, pcd.colors * 255.0)
-    try:
-        pcd = fetchPly(ply_path)
-    except Exception:
-        pcd = _create_random_pointcloud(train_cam_infos, num_points=100_000)
+
+    if os.path.exists(triangulated_bin):
+        from scene.colmap_loader import read_points3D_binary
+        print(f"[NeRF-OSR] Loading triangulated point cloud from {triangulated_bin}")
+        xyzs, rgbs, _ = read_points3D_binary(triangulated_bin)
+        print(f"[NeRF-OSR] Loaded {len(xyzs)} triangulated points")
+        pcd = BasicPointCloud(
+            points=xyzs.astype(np.float32),
+            colors=(rgbs / 255.0).astype(np.float32),
+            normals=np.zeros((len(xyzs), 3), dtype=np.float32),
+        )
+        # SceneInfo.ply_path must be a valid file (Scene copies it to input.ply)
+        ply_path = os.path.join(path, "points3d_triangulated.ply")
+        if not os.path.exists(ply_path):
+            storePly(ply_path, pcd.points, pcd.colors * 255.0)
+    else:
+        print("[NeRF-OSR] No triangulated cloud found — using random init (100k points)")
+        if not os.path.exists(ply_path):
+            print("Generating random initial point cloud...")
+            pcd = _create_random_pointcloud(train_cam_infos, num_points=100_000)
+            storePly(ply_path, pcd.points, pcd.colors * 255.0)
+        try:
+            pcd = fetchPly(ply_path)
+        except Exception:
+            pcd = _create_random_pointcloud(train_cam_infos, num_points=100_000)
 
     scene_info = SceneInfo(
         point_cloud=pcd,
