@@ -6,8 +6,7 @@ intrinsics, bypassing COLMAP entirely. This preserves the dataset's accurate
 calibration (the whole reason for using NeRF-OSR over raw images).
 
 Key features:
-  - Uses GT poses (C2W) + GT intrinsics (K) — no COLMAP pose estimation
-  - Applies OpenGL->OpenCV Y/Z flip (from cvt.py's convert_pose)
+  - Uses GT poses (C2W, already OpenCV — NO Y/Z flip; the flip inverts them) + GT intrinsics (K)
   - Handles per-image dimension mismatches (min of image/mask size)
   - Generates RANDOM initial point cloud (GS-IR optimises positions anyway)
   - Loads NeRF-OSR masks (sky/foreground)
@@ -43,10 +42,11 @@ def _find_images(rgb_dir):
     return sorted(files, key=lambda p: p.name)
 
 
-def _load_pose(pose_path, flip_yz=True):
+def _load_pose(pose_path, flip_yz=False):
     """
     Load a 4x4 C2W matrix from a NeRF-OSR pose file.
-    Applies OpenGL->OpenCV Y/Z flip (matches cvt.py's convert_pose).
+    NOTE: GT poses are already OpenCV — do NOT apply the Y/Z flip (it inverts them;
+    see readNeRFOSRSceneInfo for the verification). flip_yz kept only for A/B tests.
     """
     c2w = np.loadtxt(pose_path, dtype=np.float32).reshape(4, 4)
     if flip_yz:
@@ -69,7 +69,7 @@ def _load_intrinsics(intr_path):
     return float(K[0, 0]), float(K[1, 1]), float(K[0, 2]), float(K[1, 2])
 
 
-def readNeRFOSRCameras(split_dir, flip_yz=True, force_wh=None):
+def readNeRFOSRCameras(split_dir, flip_yz=False, force_wh=None):
     from scene.dataset_readers import CameraInfo
 
     rgb_dir  = os.path.join(split_dir, "rgb")
@@ -176,7 +176,18 @@ def readNeRFOSRSceneInfo(path, images=None, eval=True, **kwargs):
         eval: if True, use test split as test cameras; else all in train
     """
     from scene.dataset_readers import SceneInfo, getNerfppNorm, storePly, fetchPly
-    flip_yz = kwargs.get("flip_yz", True)
+    # Pose convention: the NeRF-OSR GT poses are ALREADY OpenCV. Verified two ways:
+    #   (1) pose audit — GT orientations match COLMAP bundle adjustment to 0.08 deg
+    #       with NO flip, but 179.95 deg WITH the OpenGL->OpenCV Y/Z flip;
+    #   (2) training — flip_yz=True overfits train (~30 dB) but collapses on held-out
+    #       views (same-session holdout test 9.5, SSIM 0.24); flip_yz=False generalises
+    #       (holdout test 16.2 / 0.67, on par with COLMAP), cross-session test 9.5->14.5.
+    # So flip_yz=False is correct. Escape hatch NERFOSR_FLIP=1 restores the old
+    # (broken) behaviour for A/B comparison only.
+    flip_yz = kwargs.get("flip_yz", False)
+    if os.environ.get("NERFOSR_FLIP"):
+        flip_yz = True
+        print("[NeRF-OSR] NERFOSR_FLIP set -> flip_yz=True (legacy/broken convention)")
 
     train_dir = os.path.join(path, "train")
     test_dir  = os.path.join(path, "test")
