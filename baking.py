@@ -100,7 +100,7 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Testing script parameters")
     model = ModelParams(parser, sentinel=True)
     pipeline = PipelineParams(parser)
-    parser.add_argument("--bound", default=1.5, type=float, help="The bound of occlusion volumes.")
+    parser.add_argument("--bound", default=-1.0, type=float, help="The bound of occlusion volumes. <=0 => auto (derived from the Gaussian cloud extent).")
     parser.add_argument("--valid", default=1.5, type=float, help="Identify valid area (cull invalid 3D Gaussians) to accelerate baking.")
     parser.add_argument("--occlu_res", default=160, type=int, help="The resolution of the baked occlusion volumes.")
     parser.add_argument("--cubemap_res", default=256, type=int, help="The resolution of the cubemap produced during baking.")
@@ -206,6 +206,14 @@ if __name__ == "__main__":
     )
 
     # positions = torch.ones([1, 3]).cuda()
+    # --bound <= 0  => auto: size the occlusion volume from the Gaussian cloud extent,
+    # so the pipeline is scene-agnostic (no per-scene hand-tuning). The 99.5th percentile
+    # of |xyz| guards against a few far-flung outlier splats blowing the volume up.
+    if args.bound <= 0:
+        _r = gaussians.get_xyz.abs().quantile(0.995).item()
+        args.bound = float(_r * 1.05)
+        print(f"[auto-bound] derived bound={args.bound:.3f} from Gaussian cloud extent")
+
     prods = list(itertools.product(range(args.occlu_res), range(args.occlu_res), range(args.occlu_res)))
     aabb_min = torch.tensor([-args.bound] * 3).cuda()
     aabb_max = torch.tensor([args.bound] * 3).cuda()
