@@ -1,0 +1,18 @@
+# .dockerignore (build-context root, for packaging/Dockerfile).
+#
+# In a CLEAN checkout (CI / fresh git clone) the only item below that actually
+# exists is .git. The rest is a cheap guard for the case where someone builds
+# from a dirty working tree, so gigabyte outputs/ and host-built *.so don't leak
+# into the build context and shadow the in-image builds.
+
+.git
+
+# python bytecode caches
+**/__pycache__/
+
+# host-compiled extensions — always rebuilt in-image; never ship a host .so
+**/*.so
+
+# large local data / results (only present when building from a working tree)
+outputs/
+datasets/
