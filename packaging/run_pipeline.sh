@@ -30,16 +30,19 @@ if [ ! -d "$DATA" ]; then
     echo "       Mount your scene with:  -v /path/to/scene:/data" >&2
     exit 1
 fi
-if [ ! -d "$DATA/train/pose" ] && [ ! -d "$DATA/sparse" ] && [ ! -f "$DATA/transforms_train.json" ]; then
-    echo "ERROR: '$DATA' is not a recognised scene format." >&2
-    echo "       Expected one of:" >&2
-    echo "         - NeRF-OSR : a  train/pose/  folder" >&2
-    echo "         - COLMAP   : a  sparse/      folder" >&2
-    echo "         - Blender  : a  transforms_train.json  file" >&2
-    exit 1
-fi
-
 mkdir -p "$OUT"
+
+# ---- format detection ---------------------------------------------------------
+# A calibrated scene (has camera poses) trains directly. Anything else is treated as
+# a raw capture and handed to preprocess.sh, which extracts video frames / gathers
+# photos and runs COLMAP. preprocess.sh errors clearly if nothing usable.
+if [ -d "$DATA/train/pose" ] || [ -d "$DATA/sparse" ] || [ -f "$DATA/transforms_train.json" ]; then
+    :  # NeRF-OSR / COLMAP / Blender — ready to train
+else
+    echo ""
+    echo ">>> [0/5] No camera poses found - running COLMAP preprocessing (one-time; saved into your scene folder)"
+    bash /workspace/preprocess.sh "$DATA"
+fi
 
 echo "=================================================================="
 echo " GS-IR pipeline"

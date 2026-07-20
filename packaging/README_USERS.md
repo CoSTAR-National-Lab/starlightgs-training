@@ -47,17 +47,34 @@ docker pull ghcr.io/costar/gs-ir:latest
 
 ## 3. Prepare your scene folder
 
-The tool auto-detects three formats. Your scene folder must be **one** of:
+The tool auto-detects what you give it. Your scene folder can be **either**:
+
+**A. Just your raw capture** (the easy case, the tool calibrates it for you):
+
+| You have…                         | What happens |
+|-----------------------------------|--------------|
+| a **video** file (`.mp4`/`.mov`)  | frames are extracted, then COLMAP recovers the camera poses |
+| **photos** loose in the folder, or in an `input/` subfolder | COLMAP recovers the camera poses |
+
+> Put photos **loose in the scene folder** or inside a subfolder called **`input/`**.
+
+The first run does this **once** and saves the result back into your scene folder (it creates
+`input/` with your raw frames, plus `images/` and `sparse/`). Later runs reuse it and skip the
+slow calibration. **COLMAP calibration adds ~10–60 min** on the first run and needs photos with
+**good overlap** (each area seen from several angles).
+
+**B. An already-calibrated scene** (skips calibration):
 
 | Format   | It has…                    |
 |----------|----------------------------|
-| NeRF-OSR | a `train/pose/` folder     |
 | COLMAP   | a `sparse/` folder         |
+| NeRF-OSR | a `train/pose/` folder     |
 | Blender  | a `transforms_train.json`  |
 
-If you only have raw photos, you first need to run camera calibration (COLMAP) to produce a
-`sparse/` folder. You can follow the process explained [here](https://github.com/fyusion/llff#general-step-by-step-usage).
-TODO - Process the raw datasets within this image.
+> Tip: for best results from photos, capture lots of overlapping views (think 100–300) all
+> the way around the subject. Blurry or sparse captures may fail to calibrate. The easiest way
+> is to capture a video around an object slowly at different highs and let the processing
+> script do its magic.
 
 ---
 
@@ -123,14 +140,27 @@ run.bat C:\path\to\my_scene C:\path\to\output
 Try `GSIR_RESOLUTION=4` if `2` still runs out. **Note:** NeRF-OSR scenes must stay at
 `GSIR_RESOLUTION=1` (their calibration requires it).
 
-**"is not a recognised scene format"** — your folder isn't one of the three formats in step 3.
+**"no images or video found"** — your folder has none of the inputs in step 3 (a video, loose
+photos, an `input/` folder, or an already-calibrated scene).
 
-**It's very slow / seems stuck** — training genuinely takes hours; the progress banners
-(`[1/5] … [5/5]`) tell you which stage you're in. As long as one is printed you're fine.
+**"COLMAP could not reconstruct this scene"** — calibration failed: usually too few photos or
+too little overlap. Capture more views (100–300), moving slowly so consecutive frames share
+lots of content. A slow orbit video is the easiest way. For video, raise `GSIR_TARGET_FRAMES`.
 
-**Advanced knobs** (optional, via environment variables): `GSIR_ITERS_S1` (default 30000),
-`GSIR_ITERS_S2` (35000), `GSIR_OCCLU_RES` (256), `GSIR_OCCLUSION` (0.4), `GSIR_SCENE`
-(output subfolder name).
+**COLMAP step says "Killed"** — it ran out of RAM during calibration (common with very
+high-resolution photos on a modest machine). Lower the feature-detection size, e.g.
+`GSIR_COLMAP_MAX_IMAGE_SIZE=1600` (this does not lower your training image quality).
+
+**It's very slow / seems stuck** — calibration (`[0/5]`, first run only) and training genuinely
+take a while; the progress banners (`[0/5] … [5/5]`) tell you which stage you're in. As long as
+one is printed you're fine.
+
+**Advanced knobs** (optional, via environment variables):
+- Pipeline: `GSIR_RESOLUTION` (1), `GSIR_ITERS_S1` (30000), `GSIR_ITERS_S2` (35000),
+  `GSIR_OCCLU_RES` (256), `GSIR_OCCLUSION` (0.4), `GSIR_SCENE` (output subfolder name).
+- Calibration (raw photos/video): `GSIR_TARGET_FRAMES` (300, frames extracted from a video),
+  `GSIR_MATCHER` (auto | exhaustive | sequential), `GSIR_CAMERA` (OPENCV),
+  `GSIR_COLMAP_MAX_IMAGE_SIZE` (2000), `GSIR_COLMAP_GPU` (0).
 
 ---
 

@@ -18,11 +18,12 @@ ENV TORCH_CUDA_ARCH_LIST="7.5;8.0;8.6;8.9;9.0+PTX"
 # and reachable no matter which UID `--user` runs the container as.
 ENV TORCH_HOME=/workspace/.cache/torch
 
-# System deps (colmap included for optional preprocessing; the rest are GL/X libs).
+# System deps: colmap + ffmpeg drive the raw-images/video preprocessing;
+# the rest are GL/X libs.
 RUN set -xe \
     && apt-get update -y \
     && apt-get install -y --no-install-recommends \
-        curl gnupg2 wget unzip git dos2unix \
+        curl gnupg2 wget unzip git dos2unix ffmpeg \
         libx11-6 libglib2.0-0 libxrender1 libxext6 libgl1 libgomp1 colmap \
     && rm -rf /var/lib/apt/lists/*
 
@@ -49,10 +50,10 @@ RUN cd submodules \
 RUN python -c "import lpips; lpips.LPIPS(net='vgg'); lpips.LPIPS(net='alex')" || true \
  && chmod -R a+rX /workspace/.cache
 
-# Put the entrypoint at the workspace root (normalise line endings in case of CRLF).
-RUN cp packaging/run_pipeline.sh /workspace/run_pipeline.sh \
- && dos2unix /workspace/run_pipeline.sh \
- && chmod +x /workspace/run_pipeline.sh
+# Put the entrypoint + preprocessing scripts at the workspace root (normalise CRLF).
+RUN cp packaging/run_pipeline.sh packaging/preprocess.sh /workspace/ \
+ && dos2unix /workspace/run_pipeline.sh /workspace/preprocess.sh \
+ && chmod +x /workspace/run_pipeline.sh /workspace/preprocess.sh
 
 # ENTRYPOINT so `docker run <img> /data` passes /data as the scene arg.
 # For a debug shell:  docker run --entrypoint bash -it <img>

@@ -36,6 +36,6 @@ docker run --rm --gpus all \
     --user "$(id -u):$(id -g)" \
     --shm-size=16g \
     -e GSIR_SCENE="$SCENE" \
-    -v "$DATA":/data:ro \
+    -v "$DATA":/data \
     -v "$OUT":/output \
     "$IMAGE" /data

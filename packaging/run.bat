@@ -32,7 +32,7 @@ REM On Windows/Docker Desktop, files land as the current user already, so no --u
 REM %~n1 = the scene folder's name, so the output is named after YOUR folder (not /data).
 docker run --rm --gpus all --shm-size=16g ^
   -e GSIR_SCENE=%~n1 ^
-  -v "%~f1":/data:ro ^
+  -v "%~f1":/data ^
   -v "%~f2":/output ^
   %IMAGE% /data
 
