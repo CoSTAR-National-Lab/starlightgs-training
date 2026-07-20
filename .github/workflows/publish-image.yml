@@ -1,0 +1,88 @@
+# Build the GS-IR distributable image and publish it to GHCR.
+#
+# Triggers:
+#   - pushing a version tag  v1.2.3   -> publishes :1.2.3, :1.2, :latest
+#   - manual "Run workflow"           -> publishes :<branch>  (and :latest if you tick it)
+#
+# The base image nvcr.io/nvidia/pytorch:24.04-py3 is public on NGC.
+name: publish-image
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      also_latest:
+        description: "Also tag this manual build as :latest"
+        type: boolean
+        default: false
+
+# Least-privilege token: read the repo, write the GHCR package.
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      # The image is ~12-15 GB and GitHub-hosted runners only have ~14 GB free on /.
+      # Reclaim ~20-30 GB by deleting toolchains the build doesn't use. Dependency-free
+      # (no third-party action) so there's nothing external to trust/pin.
+      - name: Free up disk space
+        run: |
+          echo "Before:"; df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android \
+                      /usr/local/share/boost "${AGENT_TOOLSDIRECTORY:-/opt/hostedtoolcache}"
+          sudo docker image prune -af || true
+          echo "After:"; df -h /
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Derive image tags/labels. metadata-action lowercases the repo name for us
+      # (GHCR requires lowercase); semver tags come from the pushed git tag.
+      - name: Compute tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') || github.event.inputs.also_latest == 'true' }}
+            type=ref,event=branch,enable=${{ github.event_name == 'workflow_dispatch' }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packaging/Dockerfile
+          platforms: linux/amd64          # ARM (Grace-Hopper) would need a separate build
+          push: true
+          provenance: false               # keep a plain single-arch manifest (simpler pulls)
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Summary
+        run: |
+          echo "### Published GS-IR image" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
