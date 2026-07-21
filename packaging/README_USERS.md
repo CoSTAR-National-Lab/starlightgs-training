@@ -4,6 +4,11 @@ Turn a set of photos of a scene into a **material PLY** (albedo / roughness / me
 geometry) you can drop into Unreal Engine, plus preview renders, with a single command.
 No Python, no coding.
 
+> ⚠️ **Licensing — non-commercial use only.** This tool bundles the Inria 3D Gaussian
+> Splatting rasterizer, which is licensed for **research / evaluation purposes only**. Do
+> not use it — or anything it produces — for commercial work without the appropriate
+> licence. See [`THIRD_PARTY_LICENSES.md`](../THIRD_PARTY_LICENSES.md).
+
 ---
 
 ## 1. What you need
