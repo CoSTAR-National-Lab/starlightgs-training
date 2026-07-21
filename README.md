@@ -1,244 +1,128 @@
-# <p align="center"> GS-IR: 3D Gaussian Splatting for Inverse Rendering </p>
+# GS-IR (CoSTAR)
 
-#####  <p align="center"> [Zhihao Liang](https://lzhnb.github.io/), [Qi Zhang](https://qzhang-cv.github.io/), [Ying Feng](https://scholar.google.com.hk/citations?user=PhkrqioAAAAJ&hl=zh-CN), [Ying Shan](https://scholar.google.com/citations?user=4oXBp9UAAAAJ&hl=zh-CN), [Kui Jia](http://kuijia.site/)</p>
+A containerised fork of [GS-IR](https://github.com/lzhnb/GS-IR) (3D Gaussian Splatting for
+Inverse Rendering). You give it photos or a video of a scene, and it reconstructs the geometry
+and physically based materials (albedo, roughness, metallic, normals) and exports a material
+PLY. Everything runs from a single Docker command, with no Python or manual setup.
 
-#### <p align="center">[Project Page](https://lzhnb.github.io/project-pages/gs-ir.html) | [ArXiv](https://arxiv.org/abs/2311.16473) | [Paper](https://arxiv.org/abs/2311.16473)</p>
+> **Non-commercial use only.** This project bundles the Inria 3D Gaussian Splatting rasterizer,
+> which is licensed for research and evaluation purposes only. Do not use it, or its outputs,
+> for commercial work without the appropriate licence. See
+> [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
-## Introduction
-We present GS-IR that models a scene as a set of 3D Gaussians to achieve physically-based rendering and state-ofthe-art decomposition results for both objects and scenes.
+## What this fork adds to GS-IR
 
-<p align="center">
-  <img width="60%" src="assets/teaser.png"/>
-  <img width="60%" src="assets/bicycle.gif"/>
-  <img width="60%" src="assets/ficus.gif"/>
-</p>
+* A one command Docker pipeline that runs the whole flow (calibrate, train, bake, decompose,
+  render, export) unattended. No conda, no compiling.
+* Automatic camera calibration. You can give it raw photos or a video and it runs COLMAP for you
+  the first time, so you do not have to prepare the data yourself.
+* A single image that runs across NVIDIA Turing to Hopper GPUs (RTX 20, 30 and 40 series, A100,
+  H100 and H200).
+* A material PLY exporter (`extract_ply.py`).
+* A NeRF-OSR scene reader (`scene/nerfosr_reader.py`) for training on NeRF-OSR ground truth pose
+  datasets. NeRF-OSR data:
+  [download](https://nextcloud.mpi-klsb.mpg.de/index.php/s/mGXYKpD8raQ8nMk),
+  [project and code](https://github.com/r00tman/NeRF-OSR).
 
-> Welcome to our new work [Analytic-Splatting](https://github.com/lzhnb/Analytic-Splatting). We achieve anti-aliasing and excellent detail fidelity through analytical integral approximation.
-> **Analytic-Splatting** was accepted by **ECCV 2024**!
+## Requirements
 
-## Installation
-create the basic environment
-```sh
-conda env create --file environment.yml
-conda activate gsir
+* An NVIDIA GPU (2018 or newer) with a recent driver, and Docker.
+* Linux, or Windows 10 or 11 with WSL2 and Docker Desktop.
+* Apple Silicon and Intel Macs are not supported (no CUDA), and neither are AMD GPUs.
 
-pip install kornia
+Full hardware notes and troubleshooting are in
+[packaging/README_USERS.md](packaging/README_USERS.md).
+
+## Quick start
+
+Get the image:
+
+```bash
+docker pull ghcr.io/costar/gs-ir:latest
 ```
 
-install some extensions
-```sh
-cd gs-ir && python setup.py develop && cd ..
+(or load a shared `.tar` file, see the user guide).
 
-cd submodules
-git clone https://github.com/NVlabs/nvdiffrast
-pip install ./nvdiffrast
+You also need the launcher script for your operating system. It is a small wrapper that fills in
+the Docker options for you, so copy it onto your machine from [packaging/](packaging/):
 
-pip install ./simple-knn
-pip install ./diff-gaussian-rasterization # or cd ./diff-gaussian-rasterization && python setup.py develop && cd ../..
+* Linux, WSL or a macOS shell: `run.sh`
+* Windows: `run.bat`
+
+Then run it on a scene folder (a video, loose photos, or an already calibrated dataset) and an
+output folder:
+
+```bash
+# Linux or WSL
+./run.sh /path/to/scene /path/to/output
 ```
 
-## Dataset
-We evaluate our method on [TensoIR-Synthetic](https://zenodo.org/records/7880113#.ZE68FHZBz18) and [Mip-NeRF 360](https://jonbarron.info/mipnerf360/) datasets. And please visit [here](https://drive.google.com/file/d/10WLc4zk2idf4xGb6nPL43OXTTHvAXSR3/view?usp=share_link) for the environment maps.
-Please refer to the [TensoIR](https://github.com/Haian-Jin/TensoIR?tab=readme-ov-file) for more details about **TensoIR-Synthetic** and **Environment map**.
-
-## Running
-### TensoIR-Synthetic
-Take the `lego` case as an example.
-
-**Stage1 (Initial Stage)**
-```sh
-python train.py \
--m outputs/lego/ \
--s datasets/TensoIR/lego/ \
---iterations 30000 \
---eval
+```bat
+REM Windows
+run.bat C:\path\to\scene C:\path\to\output
 ```
 
-**Baking**
-```sh
-python baking.py \
--m outputs/lego/ \
---checkpoint outputs/lego/chkpnt30000.pth \
---bound 1.5 \
---occlu_res 128 \
---occlusion 0.25
+The outputs go to `output/<scene>/`: the material `.ply`, preview renders (in `test/`), and the
+training checkpoints.
+
+## Importing into Unreal Engine
+
+The pipeline exports a material PLY. This is not a native Unreal format, so to bring it in you
+use the importer plugin developed by the University of Abertay as part of CoSTAR. The plugin
+reads the PLY and its material channels (albedo, roughness, metallic) into Unreal.
+
+## How it works
+
+```
+[0] preprocess   raw photos or video, COLMAP camera calibration (first run only)
+[1] Stage 1      geometry and appearance (SH colour)
+[2] bake         occlusion volumes (auto sized to the scene)
+[3] Stage 2      material and lighting decomposition (PBR)
+[4] render       preview PBR, normals and material channels
+[5] export       material PLY
 ```
 
-**Stage2 (Decomposition Stage)**
-```sh
-python train.py \
--m outputs/lego/ \
--s datasets/TensoIR/lego/ \
---start_checkpoint outputs/lego/chkpnt30000.pth \
---iterations 35000 \
---eval \
---gamma \
---indirect
-```
-> set `--gamma` to enable **linear_to_sRGB** will cause *better relighting results* but *worse novel view synthesis results*
-> set `--indirect` to enable indirect illumination modelling
+The pipeline and its options live in [packaging/](packaging/) (`run_pipeline.sh`,
+`preprocess.sh`, the launchers, and the `Dockerfile`).
 
-**Evaluation (Novel View Synthesis)**
-```sh
-python render.py \
--m outputs/lego \
--s datasets/TensoIR/lego/ \
---checkpoint outputs/lego/chkpnt35000.pth \
---eval \
---skip_train \
---pbr \
---gamma \
---indirect
+## Building the image yourself
+
+```bash
+docker build -f packaging/Dockerfile -t ghcr.io/costar/gs-ir:latest .
 ```
 
-**Evaluation (Normal)**
-```sh
-python normal_eval.py \
---gt_dir datasets/TensoIR/lego/ \
---output_dir outputs/lego/test/ours_None
-```
+Run this from the repository root. The build fetches a pinned nvdiffrast and compiles the CUDA
+extensions for the full GPU range.
 
-**Evaluation (Albedo)**
-```sh
-python render.py \
--m outputs/lego \
--s datasets/TensoIR/lego/ \
---checkpoint outputs/lego/chkpnt35000.pth \
---eval \
---skip_train \
---brdf_eval
-```
+## Repository layout
 
-**Relighting**
-```sh
-python relight.py \
--m outputs/lego \
--s datasets/TensoIR/lego/ \
---checkpoint outputs/lego/chkpnt35000.pth \
---hdri datasets/TensoIR/Environment_Maps/high_res_envmaps_2k/bridge.hdr \
---eval \
---gamma
-```
-> set `--gamma` to enable **linear_to_sRGB** will cause better relighting results but worse novel view synthesis results
+| Path | What it is |
+|------|------------|
+| `packaging/` | Docker image, one command pipeline, launchers, user and tester guides |
+| `scene/nerfosr_reader.py` | NeRF-OSR dataparser (our addition) |
+| `extract_ply.py` | material PLY exporter (our addition) |
+| `train.py`, `baking.py`, `render.py`, `relight.py` | the GS-IR method (upstream) |
+| `README_GSIR.md` | the original upstream GS-IR README (method, datasets, research commands) |
 
-**Relighting Evaluation**
-```sh
-python relight_eval.py \
---output_dir outputs/lego/test/ours_None/relight/ \
---gt_dir datasets/TensoIR/lego/
-```
+## Licensing
 
-### Mip-NeRF 360
-Take the `bicycle` case as an example.
+Use is non-commercial. See [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
-**Stage1 (Initial Stage)**
-```sh
-python train.py \
--m outputs/bicycle/ \
--s datasets/nerf_real_360/bicycle/ \
---iterations 30000 \
--i images_4 \
--r 1 \
---eval
-```
-> `-i images_4` for outdoor scenes and `-i images_2` for indoor scenes
-> `-r 1` for resolution scaling (not rescale)
+## Credits and origins
 
-**Baking**
-```sh
-python baking.py \
--m outputs/bicycle/ \
---checkpoint outputs/bicycle/chkpnt30000.pth \
---bound 16.0 \
---occlu_res 256 \
---occlusion 0.4
-```
+This is a fork of GS-IR by Zhihao Liang et al. See [README_GSIR.md](README_GSIR.md) for
+the original method, datasets and research usage, and please cite their paper if you use this in
+research:
 
-**Stage2 (Decomposition Stage)**
-```sh
-python train.py \
--m outputs/bicycle \
--s datasets/nerf_real_360/bicycle/ \
---start_checkpoint outputs/bicycle/chkpnt30000.pth \
---iterations 40000 \
--i images_4 \
--r 1 \
---eval \
---metallic \
---indirect
-```
-> set `--metallic` choose to reconstruct metallicness
-> set `--gamma` to enable **linear_to_sRGB** will cause better relighting results but worse novel view synthesis results
-> set `--indirect` to enable indirect illumination modelling
-
-**Evaluation**
-```sh
-python render.py \
--m outputs/bicycle \
--s datasets/nerf_real_360/bicycle/ \
---checkpoint outputs/bicycle/chkpnt40000.pth \
--i images_4 \
--r 1 \
---eval \
---skip_train \
---pbr \
---metallic \
---indirect
-```
-> set `--gamma` to enable **linear_to_sRGB** will cause better relighting results but worse novel view synthesis results
-
-**Relighting**
-```sh
-python relight.py \
--m outputs/bicycle \
--s datasets/nerf_real_360/bicycle/ \
---checkpoint outputs/bicycle/chkpnt40000.pth \
---hdri datasets/TensoIR/Environment_Maps/high_res_envmaps_2k/bridge.hdr \
---eval \
---gamma
-```
-> set `--gamma` to enable **linear_to_sRGB** will cause better relighting results but worse novel view synthesis results
-
-## Demo Implementation
-In addition, you can conduct the following script and get the same results of [demo](https://lzhnb.github.io/project-pages/assets/gs-ir/garden/relighting.mp4) in project page:
-```sh
-# Stay point light and move camera
-python shadow_map.py -m output/garden-linear/ \
--s dataset/nerf_data/nerf_real_360/garden/ \
---checkpoint output/garden-linear/chkpnt35000.pth \
---frames 480 \
---fps 60 \
---start 158 \
---end 184 \
---linear \
---loop
-
-# Stay camera and move point light
-python light_move.py -m output/garden-linear/ \
--s dataset/nerf_data/nerf_real_360/garden/ \
---checkpoint output/garden-linear/chkpnt35000.pth \
---frames 240 \
---fps 30 \
---start 158 \
---end 184 \
---loop --\
-linear
-```
-
-
-## Acknowledge
-- [gaussian-splatting](https://github.com/graphdeco-inria/gaussian-splatting)
-- [nvdiffrast](https://github.com/NVlabs/nvdiffrast)
-- [nvdiffrec](https://github.com/NVlabs/nvdiffrec)
-
-
-## Citation
-If you find this work useful in your research, please cite:
 ```txt
 @article{liang2023gs,
-  title={Gs-ir: 3d gaussian splatting for inverse rendering},
+  title={GS-IR: 3D Gaussian Splatting for Inverse Rendering},
   author={Liang, Zhihao and Zhang, Qi and Feng, Ying and Shan, Ying and Jia, Kui},
   journal={arXiv preprint arXiv:2311.16473},
   year={2023}
 }
 ```
+
+GS-IR builds on [gaussian-splatting](https://github.com/graphdeco-inria/gaussian-splatting)
+(Inria and MPII) and [nvdiffrast](https://github.com/NVlabs/nvdiffrast) (NVIDIA). Contributors
+to this fork are listed in [AUTHORS.md](AUTHORS.md).
