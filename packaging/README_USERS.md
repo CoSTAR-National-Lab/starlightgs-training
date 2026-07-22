@@ -1,12 +1,12 @@
-# GS-IR — Quick Start
+# GS-IR Quick Start
 
 Turn a set of photos of a scene into a **material PLY** (albedo / roughness / metallic +
 geometry) you can drop into Unreal Engine, plus preview renders, with a single command.
 No Python, no coding.
 
-> ⚠️ **Licensing — non-commercial use only.** This tool bundles the Inria 3D Gaussian
+> ⚠️ **Licensing, non-commercial use only.** This tool bundles the Inria 3D Gaussian
 > Splatting rasterizer, which is licensed for **research / evaluation purposes only**. Do
-> not use it — or anything it produces — for commercial work without the appropriate
+> not use it, or anything it produces, for commercial work without the appropriate
 > licence. See [`THIRD_PARTY_LICENSES.md`](../THIRD_PARTY_LICENSES.md).
 
 ---
@@ -15,10 +15,12 @@ No Python, no coding.
 
 **Hardware**
 
-- An **NVIDIA GPU** from 2018 or newer (RTX 20-, 30-, 40-series, or a workstation/datacentre
+- An **NVIDIA GPU** from 2018 or newer (RTX 20-, 30-, 40- or 50-series, or a workstation/datacentre
   card like A100 / H100 / H200). **≥ 12 GB VRAM recommended.**
-  - 8 GB cards work, but you must lower the resolution — see *Out of memory* below.
-- NVIDIA driver **545 or newer**.
+  - 8 GB cards work, but you must lower the resolution, see *Out of memory* below.
+- **NVIDIA driver 570 or newer** (needed for CUDA 12.8; RTX 50-series cards already have this).
+  If yours is older, update it from [nvidia.com/drivers](https://www.nvidia.com/en-us/drivers/)
+  (on Windows the NVIDIA App does it in a click; a driver update is reversible).
 
 **Not supported:** Apple Silicon / Intel Macs (no NVIDIA GPU = no CUDA), AMD GPUs.
 On those machines this tool cannot run at all.
@@ -35,7 +37,7 @@ On those machines this tool cannot run at all.
 Check the GPU is visible to Docker:
 
 ```bash
-docker run --rm --gpus all nvcr.io/nvidia/pytorch:24.04-py3 nvidia-smi
+docker run --rm --gpus all nvcr.io/nvidia/pytorch:25.03-py3 nvidia-smi
 ```
 
 If that prints your GPU, you're ready.
@@ -129,11 +131,11 @@ output/<scene>/
 
 ## Troubleshooting
 
-**"could not select device driver … capabilities: [[gpu]]"** — Docker can't see the GPU.
+**"could not select device driver … capabilities: [[gpu]]"**: Docker can't see the GPU.
 Re-check the `nvidia-smi` test in step 1 (driver installed? NVIDIA Container Toolkit installed
 on Linux? WSL GPU integration enabled on Windows?).
 
-**Out of memory / "CUDA out of memory"** — your GPU has too little VRAM for full resolution.
+**Out of memory / "CUDA out of memory"**: your GPU has too little VRAM for full resolution.
 Run at half resolution by adding an environment variable:
 ```bash
 # Linux/WSL:
@@ -145,18 +147,18 @@ run.bat C:\path\to\my_scene C:\path\to\output
 Try `GSIR_RESOLUTION=4` if `2` still runs out. **Note:** NeRF-OSR scenes must stay at
 `GSIR_RESOLUTION=1` (their calibration requires it).
 
-**"no images or video found"** — your folder has none of the inputs in step 3 (a video, loose
+**"no images or video found"**: your folder has none of the inputs in step 3 (a video, loose
 photos, an `input/` folder, or an already-calibrated scene).
 
-**"COLMAP could not reconstruct this scene"** — calibration failed: usually too few photos or
+**"COLMAP could not reconstruct this scene"**: calibration failed: usually too few photos or
 too little overlap. Capture more views (100–300), moving slowly so consecutive frames share
 lots of content. A slow orbit video is the easiest way. For video, raise `GSIR_TARGET_FRAMES`.
 
-**COLMAP step says "Killed"** — it ran out of RAM during calibration (common with very
+**COLMAP step says "Killed"**: it ran out of RAM during calibration (common with very
 high-resolution photos on a modest machine). Lower the feature-detection size, e.g.
 `GSIR_COLMAP_MAX_IMAGE_SIZE=1600` (this does not lower your training image quality).
 
-**It's very slow / seems stuck** — calibration (`[0/5]`, first run only) and training genuinely
+**It's very slow / seems stuck**: calibration (`[0/5]`, first run only) and training genuinely
 take a while; the progress banners (`[0/5] … [5/5]`) tell you which stage you're in. As long as
 one is printed you're fine.
 
@@ -169,13 +171,13 @@ one is printed you're fine.
 
 ---
 
-## Advanced (optional) — run a single step
+## Advanced (optional)
 
 *You don't need this for normal use.* The container normally runs the whole pipeline, but
 power users can override that to run just one script. Because the checkpoints are kept in
 your output folder, you can re-do the final step without retraining.
 
-**Re-export the PLY from an existing run** (no retraining — seconds, not hours):
+**Re-export the PLY from an existing run** (no retraining, it takes seconds, not hours):
 ```bash
 docker run --rm --gpus all -v /path/to/output:/output \
   --entrypoint python ghcr.io/costar/gs-ir:latest \

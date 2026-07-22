@@ -1,18 +1,19 @@
-# GS-IR - distributable, multi-GPU image (Turing -> Hopper).
+# GS-IR - distributable, multi-GPU image (Turing -> Blackwell).
 #
 # Build from the SOURCE ROOT:
 #     docker build -f packaging/Dockerfile -t ghcr.io/costar/gs-ir:latest .
 #
-# NOTE: Blackwell (RTX 50-series, sm_120) is NOT covered - it needs a CUDA 12.8
-#       base and driver 570+.
-FROM nvcr.io/nvidia/pytorch:24.04-py3
+# Base: CUDA 12.8 (NVIDIA PyTorch 25.03). Covers RTX 20/30/40/50-series + A100/H100/H200.
+# Requires host NVIDIA driver >= 570 (needed for CUDA 12.8 and Blackwell).
+FROM nvcr.io/nvidia/pytorch:25.03-py3
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Multi-GPU support:
-#   7.5 Turing (20-series / T4) · 8.0 A100 · 8.6 30-series · 8.9 Ada (40-series) · 9.0 Hopper (H100/H200)
-# +PTX lets a newer driver JIT for future minor archs. Does NOT reach Blackwell (12.0).
-ENV TORCH_CUDA_ARCH_LIST="7.5;8.0;8.6;8.9;9.0+PTX"
+# Multi-GPU support (one fat binary):
+#   7.5 Turing (20-series / T4) · 8.0 A100 · 8.6 30-series · 8.9 Ada (40-series)
+#   9.0 Hopper (H100/H200) · 12.0 Blackwell (50-series)
+# +PTX on the top arch lets a newer driver JIT for future cards.
+ENV TORCH_CUDA_ARCH_LIST="7.5;8.0;8.6;8.9;9.0;12.0+PTX"
 
 # Baked, world-readable model cache so lpips/torchvision weights are present offline
 # and reachable no matter which UID `--user` runs the container as.

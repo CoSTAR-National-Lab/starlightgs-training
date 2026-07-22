@@ -18,11 +18,11 @@ non-commercial research/evaluation only (see the Inria licence).**
 
 ## Where to find the full licence texts
 
-- **Inria Gaussian-Splatting License** — `submodules/diff-gaussian-rasterization/LICENSE.md`
+- **Inria Gaussian-Splatting License**: `submodules/diff-gaussian-rasterization/LICENSE.md`
   (and the identical terms for `simple-knn`). Key clause: *"The Software may be used
   'non-commercially', i.e., for research and/or evaluation purposes only … THE USER CANNOT
   USE, EXPLOIT OR DISTRIBUTE THE SOFTWARE FOR COMMERCIAL PURPOSES WITHOUT PRIOR AND EXPLICIT
   CONSENT OF LICENSORS. YOU MUST CONTACT INRIA FOR ANY [commercial use]."*
-- **nvdiffrast** — https://github.com/NVlabs/nvdiffrast/blob/v0.4.0/LICENSE.txt
-- **COLMAP**, **NVIDIA base image**, and the **Python packages** — under their respective
+- **nvdiffrast**: https://github.com/NVlabs/nvdiffrast/blob/v0.4.0/LICENSE.txt
+- **COLMAP**, **NVIDIA base image**, and the **Python packages**, under their respective
   upstream projects / package metadata.

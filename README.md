@@ -16,8 +16,8 @@ PLY. Everything runs from a single Docker command, with no Python or manual setu
   render, export) unattended. No conda, no compiling.
 * Automatic camera calibration. You can give it raw photos or a video and it runs COLMAP for you
   the first time, so you do not have to prepare the data yourself.
-* A single image that runs across NVIDIA Turing to Hopper GPUs (RTX 20, 30 and 40 series, A100,
-  H100 and H200).
+* A single image that runs across NVIDIA Turing to Blackwell GPUs (RTX 20, 30, 40 and 50 series,
+  A100, H100 and H200).
 * A material PLY exporter (`extract_ply.py`).
 * A NeRF-OSR scene reader (`scene/nerfosr_reader.py`) for training on NeRF-OSR ground truth pose
   datasets. NeRF-OSR data:
@@ -26,7 +26,8 @@ PLY. Everything runs from a single Docker command, with no Python or manual setu
 
 ## Requirements
 
-* An NVIDIA GPU (2018 or newer) with a recent driver, and Docker.
+* An NVIDIA GPU from the RTX 20-series (2018) through the 50-series, or a datacentre card
+  (A100, H100, H200), with NVIDIA driver 570 or newer, and Docker.
 * Linux, or Windows 10 or 11 with WSL2 and Docker Desktop.
 * Apple Silicon and Intel Macs are not supported (no CUDA), and neither are AMD GPUs.
 
