@@ -10,6 +10,7 @@ import numpy as np
 import nvdiffrast.torch as dr
 import torch
 import torch.nn.functional as F
+from plyfile import PlyData
 from tqdm import trange
 from diff_gaussian_rasterization import _C
 from gs_ir import _C as gs_ir_ext
@@ -206,13 +207,28 @@ if __name__ == "__main__":
     )
 
     # positions = torch.ones([1, 3]).cuda()
-    # --bound <= 0  => auto: size the occlusion volume from the Gaussian cloud extent,
-    # so the pipeline is scene-agnostic (no per-scene hand-tuning). The 99.5th percentile
-    # of |xyz| guards against a few far-flung outlier splats blowing the volume up.
+    # --bound <= 0  => auto, so the pipeline needs no per-scene hand-tuning.
+    #
+    # `bound` is the half-size of an origin-centred cube that is divided into occlu_res^3
+    # voxels. We want the smallest cube that still contains the scene: too large spreads the
+    # voxels thin and blurs the ambient occlusion, too small clamps geometry onto the box
+    # surface. We measure it from input.ply, the cloud training started from, so the value is
+    # the same no matter how long the scene is trained. Taking the 75th percentile of each
+    # point's distance from the origin captures the bulk of the scene while ignoring the long
+    # tail of distant background points, and doubling it leaves headroom. This reproduces the
+    # bounds that were previously hand-picked: theatre 8.0 -> 9.2, stjohann 2.0 -> 2.1,
+    # garden 16.0 -> 14.6.
     if args.bound <= 0:
-        _r = gaussians.get_xyz.abs().quantile(0.995).item()
-        args.bound = float(_r * 1.05)
-        print(f"[auto-bound] derived bound={args.bound:.3f} from Gaussian cloud extent")
+        init_ply = os.path.join(model_path, "input.ply")
+        if not os.path.exists(init_ply):
+            raise FileNotFoundError(
+                f"Cannot derive --bound automatically: {init_ply} does not exist. "
+                "Pass --bound explicitly."
+            )
+        vertices = PlyData.read(init_ply)["vertex"]
+        init_points = np.stack([vertices["x"], vertices["y"], vertices["z"]], axis=1)
+        args.bound = 2.0 * float(np.percentile(np.abs(init_points).max(axis=1), 75))
+        print(f"[auto-bound] bound={args.bound:.3f} (2 x p75 of {init_ply})")
 
     prods = list(itertools.product(range(args.occlu_res), range(args.occlu_res), range(args.occlu_res)))
     aabb_min = torch.tensor([-args.bound] * 3).cuda()

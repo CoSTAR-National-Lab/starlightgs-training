@@ -63,9 +63,15 @@ python baking.py -m "$OUT" --checkpoint "$CKPT_S1" \
     --occlu_res "$OCCLU_RES" --occlusion "$OCCLUSION"
 
 echo ""; echo ">>> [3/5] Stage 2 - material / lighting decomposition (${ITERS_S2} iters)"
+# Reuse the bound the occlusion was baked with, so the indirect-lighting volume covers the
+# same cube. train.py otherwise falls back to its own default of 1.5, which is far too small
+# for any real scene and collapses indirect light to a near-constant term.
+BOUND=$(python -c "import torch; print(torch.load('$OUT/occlusion_volumes.pth', map_location='cpu', weights_only=False)['bound'])")
+echo "    using baked bound: $BOUND"
 python train.py -m "$OUT" -s "$DATA" \
     --start_checkpoint "$CKPT_S1" \
-    --iterations "$ITERS_S2" --eval --gamma --indirect -r "$RES"
+    --iterations "$ITERS_S2" --eval --gamma --indirect -r "$RES" \
+    --bound "$BOUND"
 
 echo ""; echo ">>> [4/5] Preview renders (PBR + normals + material channels)"
 python render.py -m "$OUT" -s "$DATA" \
