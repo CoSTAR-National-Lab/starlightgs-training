@@ -171,7 +171,7 @@ def training(
 
     # load checkpoint
     if checkpoint_path:
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=False)
         model_params = checkpoint["gaussians"]
         first_iter = checkpoint["iteration"]
         # cubemap_params = checkpoint["cubemap"]
@@ -272,7 +272,7 @@ def training(
             if occlusion_flag and indirect:
                 filepath = os.path.join(os.path.dirname(checkpoint_path), "occlusion_volumes.pth")
                 print(f"begin to load occlusion volumes from {filepath}")
-                occlusion_volumes = torch.load(filepath)
+                occlusion_volumes = torch.load(filepath, weights_only=False)
                 occlusion_ids = occlusion_volumes["occlusion_ids"]
                 occlusion_coefficients = occlusion_volumes["occlusion_coefficients"]
                 occlusion_degree = occlusion_volumes["degree"]

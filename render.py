@@ -227,7 +227,7 @@ def launch(
     filepath = os.path.join(os.path.dirname(checkpoint_path), "occlusion_volumes.pth")
     print(f"begin to load occlusion volumes from {filepath}")
     if os.path.exists(filepath):
-        occlusion_volumes = torch.load(filepath)
+        occlusion_volumes = torch.load(filepath, weights_only=False)
         bound = occlusion_volumes["bound"]
     else:
         occlusion_volumes = None
@@ -235,7 +235,7 @@ def launch(
     aabb = torch.tensor([-bound, -bound, -bound, bound, bound, bound]).cuda()
     irradiance_volumes = IrradianceVolumes(aabb=aabb).cuda()
 
-    checkpoint = torch.load(checkpoint_path)
+    checkpoint = torch.load(checkpoint_path, weights_only=False)
     model_params = checkpoint["gaussians"]
     cubemap_params = checkpoint["cubemap"]
     irradiance_volumes_params = checkpoint["irradiance_volumes"]

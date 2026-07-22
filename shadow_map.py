@@ -349,7 +349,7 @@ def launch(
     gaussians = GaussianModel(dataset.sh_degree)
     scene = Scene(dataset, gaussians, shuffle=False)
 
-    checkpoint = torch.load(checkpoint)
+    checkpoint = torch.load(checkpoint, weights_only=False)
     if isinstance(checkpoint, Tuple):
         model_params = checkpoint[0]
     elif isinstance(checkpoint, Dict):
