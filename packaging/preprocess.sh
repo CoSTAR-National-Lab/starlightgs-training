@@ -41,7 +41,6 @@ if [ ! -d "$DATA/input" ]; then
         echo "    video ${dur}s -> extracting ~${TARGET_FRAMES} frames at ${r} fps"
         ffmpeg -hide_banner -loglevel error -i "${videos[0]}" \
             -vf "fps=${r}" -qscale:v 1 "$DATA/input/frame_%05d.jpg"
-        [ "$MATCHER" = "auto" ] && MATCHER=sequential      # ordered frames
     elif [ ${#photos[@]} -gt 0 ]; then
         echo "    moving loose photos into input/"
         for f in "${photos[@]}"; do mv "$f" "$DATA/input/"; done
@@ -51,7 +50,9 @@ if [ ! -d "$DATA/input" ]; then
     fi
     shopt -u nullglob
 fi
-[ "$MATCHER" = "auto" ] && MATCHER=exhaustive              # unordered photos
+# Exhaustive even for video: sequential is faster but only links neighbouring frames, so a
+# break in the sequence splits the scene into several models. Override with GSIR_MATCHER.
+[ "$MATCHER" = "auto" ] && MATCHER=exhaustive
 
 nimg=$(find "$DATA/input" -maxdepth 1 -type f | wc -l)
 echo "    ${nimg} input images; matcher=${MATCHER}_matcher; camera=${CAMERA}; use_gpu=${USE_GPU}"
@@ -91,17 +92,42 @@ colmap mapper --database_path "$DB" --image_path "$DATA/input" \
     --output_path "$DATA/distorted/sparse" \
     --Mapper.ba_global_function_tolerance=0.000001
 
-if [ ! -f "$DATA/distorted/sparse/0/cameras.bin" ]; then
+# COLMAP writes one model per connected component (sparse/0, sparse/1, ...) and model 0 is
+# not always the largest. Pick the model that registered the most images.
+LARGEST_MODEL=""
+LARGEST_MODEL_IMAGES=0
+for m in "$DATA"/distorted/sparse/*/; do
+    [ -f "${m}images.bin" ] || continue
+    n=$(colmap model_analyzer --path "$m" 2>&1 |
+        sed -n 's/.*Registered images: *\([0-9]*\).*/\1/p' | head -1)
+    n=${n:-0}
+    echo "    model $(basename "$m"): ${n} registered images"
+    if [ "$n" -gt "$LARGEST_MODEL_IMAGES" ]; then
+        LARGEST_MODEL_IMAGES=$n
+        LARGEST_MODEL=$m
+    fi
+done
+
+if [ -z "$LARGEST_MODEL" ]; then
     echo "ERROR: COLMAP could not reconstruct this scene (too few matches / poor overlap)." >&2
     echo "       Try more photos with more overlap, or a higher GSIR_TARGET_FRAMES for video." >&2
     exit 1
 fi
 
+# Training on a small fragment collapses thousands of iterations later, so stop here instead.
+if [ "$(( 100 * LARGEST_MODEL_IMAGES / nimg ))" -lt 50 ]; then
+    echo "ERROR: COLMAP only registered ${LARGEST_MODEL_IMAGES} of ${nimg} images." >&2
+    echo "       This capture is too fragmented to train on. Move around the subject so" >&2
+    echo "       consecutive views overlap well, and avoid motion blur." >&2
+    exit 1
+fi
+echo "    using model $(basename "$LARGEST_MODEL") (${LARGEST_MODEL_IMAGES}/${nimg} images)"
+
 # ---- 3. undistort into ideal pinhole -> images/ + sparse/0/ -------------------
 # GS-IR (like 3DGS) expects undistorted PINHOLE images.
 echo "    [colmap] undistorting images"
 colmap image_undistorter \
-    --image_path "$DATA/input" --input_path "$DATA/distorted/sparse/0" \
+    --image_path "$DATA/input" --input_path "$LARGEST_MODEL" \
     --output_path "$DATA" --output_type COLMAP
 
 # image_undistorter writes sparse/ flat; GS-IR wants it under sparse/0/.
