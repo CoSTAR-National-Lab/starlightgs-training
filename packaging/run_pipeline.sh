@@ -68,6 +68,33 @@ echo "=================================================================="
 CKPT_S1="$OUT/chkpnt${ITERS_S1}.pth"
 CKPT_S2="$OUT/chkpnt${ITERS_S2}.pth"
 
+# Every training image is held on the GPU, so a large photo set is the usual cause of
+# out-of-memory. Estimate it here rather than failing an hour into training.
+if [ "$DATA_DEVICE" = "cuda" ]; then
+    IMG_DIR="$DATA/images"
+    [ -d "$DATA/train/rgb" ] && IMG_DIR="$DATA/train/rgb"
+    VRAM_MB=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | head -1)
+    python - "$IMG_DIR" "$RES" "${VRAM_MB:-0}" <<'PY' || true
+import glob, sys
+from PIL import Image
+folder, res, vram_mb = sys.argv[1], float(sys.argv[2]), float(sys.argv[3])
+files = [f for f in sorted(glob.glob(folder + "/*"))
+         if f.lower().endswith((".jpg", ".jpeg", ".png"))]
+if files and vram_mb:
+    w, h = Image.open(files[0]).size
+    if res in (1, 2, 4, 8):
+        w, h = w / res, h / res
+    elif res == -1 and w > 1600:
+        w, h = 1600, h * 1600 / w
+    needed, vram = len(files) * w * h * 3 * 4 / 1e9, vram_mb / 1024
+    if needed > 0.6 * vram:
+        print(f"WARNING: {len(files)} images at {int(w)}x{int(h)} need about {needed:.1f} GB of GPU")
+        print(f"         memory and this GPU has {vram:.1f} GB. If training runs out of memory,")
+        print(f"         retry with GSIR_DATA_DEVICE=cpu (full quality, slower) or")
+        print(f"         GSIR_RESOLUTION=2 (faster, lower quality).")
+PY
+fi
+
 echo ""; echo ">>> [1/5] Stage 1 - geometry + appearance (${ITERS_S1} iters)"
 python train.py -m "$OUT" -s "$DATA" --iterations "$ITERS_S1" --eval -r "$RES" \
     --data_device "$DATA_DEVICE"
