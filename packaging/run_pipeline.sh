@@ -18,7 +18,8 @@ OUTPUT_BASE="${GSIR_OUTPUT:-/output}"       # Optional
 SCENE="${GSIR_SCENE:-$(basename "$DATA")}"  # Optional
 OUT="$OUTPUT_BASE/$SCENE"                   # Optional
 
-RES="${GSIR_RESOLUTION:-1}"          # NeRF-OSR REQUIRES -r 1; safe default elsewhere
+RES="${GSIR_RESOLUTION:-1}"               # 1 = full resolution; 2 or 4 if VRAM is short
+DATA_DEVICE="${GSIR_DATA_DEVICE:-cuda}"   # cpu keeps images in RAM: full quality, slower
 ITERS_S1="${GSIR_ITERS_S1:-30000}"
 ITERS_S2="${GSIR_ITERS_S2:-35000}"
 OCCLU_RES="${GSIR_OCCLU_RES:-256}"
@@ -68,7 +69,8 @@ CKPT_S1="$OUT/chkpnt${ITERS_S1}.pth"
 CKPT_S2="$OUT/chkpnt${ITERS_S2}.pth"
 
 echo ""; echo ">>> [1/5] Stage 1 - geometry + appearance (${ITERS_S1} iters)"
-python train.py -m "$OUT" -s "$DATA" --iterations "$ITERS_S1" --eval -r "$RES"
+python train.py -m "$OUT" -s "$DATA" --iterations "$ITERS_S1" --eval -r "$RES" \
+    --data_device "$DATA_DEVICE"
 
 echo ""; echo ">>> [2/5] Baking occlusion volumes (auto-bound)"
 python baking.py -m "$OUT" --checkpoint "$CKPT_S1" \
@@ -83,11 +85,12 @@ echo "    using baked bound: $BOUND"
 python train.py -m "$OUT" -s "$DATA" \
     --start_checkpoint "$CKPT_S1" \
     --iterations "$ITERS_S2" --eval --gamma --indirect -r "$RES" \
-    --bound "$BOUND"
+    --bound "$BOUND" --data_device "$DATA_DEVICE"
 
 echo ""; echo ">>> [4/5] Preview renders (PBR + normals + material channels)"
 python render.py -m "$OUT" -s "$DATA" \
-    --checkpoint "$CKPT_S2" -r "$RES" --pbr --gamma --indirect
+    --checkpoint "$CKPT_S2" -r "$RES" --pbr --gamma --indirect \
+    --data_device "$DATA_DEVICE"
 
 echo ""; echo ">>> [5/5] Exporting material PLY"
 python extract_ply.py --checkpoint-file "$CKPT_S2" \

@@ -135,8 +135,20 @@ output/<scene>/
 Re-check the `nvidia-smi` test in step 1 (driver installed? NVIDIA Container Toolkit installed
 on Linux? WSL GPU integration enabled on Windows?).
 
-**Out of memory / "CUDA out of memory"**: your GPU has too little VRAM for full resolution.
-Run at half resolution by adding an environment variable:
+**Out of memory / "CUDA out of memory"**: the tool trains at full resolution by default and
+loads every image onto the GPU, so a large photo set can exhaust it. It warns you just before
+training starts if it expects this. Two ways out, best quality first:
+
+**1. Keep full quality, use system memory instead** (slower, but the images stay full size):
+```bash
+# Linux/WSL:
+GSIR_DATA_DEVICE=cpu ./run.sh /path/to/my_scene /path/to/output
+# Windows:
+set GSIR_DATA_DEVICE=cpu
+run.bat C:\path\to\my_scene C:\path\to\output
+```
+
+**2. Or lower the resolution** (faster, but less detail):
 ```bash
 # Linux/WSL:
 GSIR_RESOLUTION=2 ./run.sh /path/to/my_scene /path/to/output
@@ -163,8 +175,13 @@ take a while; the progress banners (`[0/5] … [5/5]`) tell you which stage you'
 one is printed you're fine.
 
 **Advanced knobs** (optional, via environment variables):
-- Pipeline: `GSIR_RESOLUTION` (1), `GSIR_ITERS_S1` (30000), `GSIR_ITERS_S2` (35000),
-  `GSIR_OCCLU_RES` (256), `GSIR_OCCLUSION` (0.4), `GSIR_SCENE` (output subfolder name).
+- Pipeline: `GSIR_RESOLUTION` (1 = full resolution), `GSIR_ITERS_S1` (30000),
+  `GSIR_ITERS_S2` (35000), `GSIR_OCCLU_RES` (256), `GSIR_OCCLUSION` (0.4),
+  `GSIR_SCENE` (output subfolder name).
+- `GSIR_DATA_DEVICE` (cuda). Set to `cpu` to hold the training images in system memory
+  rather than on the GPU. This keeps full image quality and greatly reduces GPU memory
+  use, at the cost of slower training, so it is the best option if you run out of memory
+  but want maximum quality. Needs enough system RAM to hold all the images.
 - Calibration (raw photos/video): `GSIR_TARGET_FRAMES` (300, frames extracted from a video),
   `GSIR_MATCHER` (auto | exhaustive | sequential), `GSIR_CAMERA` (OPENCV),
   `GSIR_COLMAP_MAX_IMAGE_SIZE` (2000), `GSIR_COLMAP_GPU` (0).
