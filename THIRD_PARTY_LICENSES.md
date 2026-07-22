@@ -12,7 +12,7 @@ non-commercial research/evaluation only (see the Inria licence).**
 | **nvdiffrast** v0.4.0 | NVIDIA (NVlabs/nvdiffrast) | NVIDIA Source Code License (1-Way Commercial) | ✅ Permitted, with conditions |
 | **GS-IR** | lzhnb/GS-IR | See upstream repository | Inherits the non-commercial constraint via the rasterizer |
 | **COLMAP** | colmap.github.io | BSD 3-Clause | ✅ Permissive |
-| **NVIDIA PyTorch base image** (`nvcr.io/nvidia/pytorch:24.04-py3`) | NVIDIA NGC | NVIDIA Deep Learning Container Licence | ✅ Redistribution permitted under its terms |
+| **NVIDIA PyTorch base image** (`nvcr.io/nvidia/pytorch:25.03-py3`) | NVIDIA NGC | NVIDIA Deep Learning Container Licence | ✅ Redistribution permitted under its terms |
 | **Python packages** (plyfile, tqdm, trimesh, imageio, kornia, lpips) | PyPI | MIT / BSD / Apache-2.0 (per package) | ✅ Permissive |
 | **ffmpeg** | ffmpeg.org (Ubuntu package) | LGPL-2.1+/GPL (depending on build) | ✅ (used as an unmodified tool) |
 
