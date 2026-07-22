@@ -32,6 +32,18 @@ if [ ! -d "$DATA" ]; then
 fi
 mkdir -p "$OUT"
 
+# Keep a full transcript beside the results. The container is removed when it exits, so
+# otherwise the only copy of the output is the user's terminal, which is no use when a
+# remote tester needs to report a failure.
+exec > >(tee -a "$OUT/run.log") 2>&1
+
+echo "=================================================================="
+echo " GS-IR run started $(date -u '+%Y-%m-%d %H:%M:%SZ')"
+echo "   gpu         : $(nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader 2>/dev/null | head -1)"
+echo "   torch/cuda  : $(python -c 'import torch; print(torch.__version__, "cuda", torch.version.cuda)' 2>/dev/null)"
+echo "   settings    : -r $RES  iters $ITERS_S1/$ITERS_S2  occlu_res $OCCLU_RES  occlusion $OCCLUSION"
+echo "=================================================================="
+
 # ---- format detection ---------------------------------------------------------
 # A calibrated scene (has camera poses) trains directly. Anything else is treated as
 # a raw capture and handed to preprocess.sh, which extracts video frames / gathers
@@ -87,4 +99,5 @@ echo " DONE - $SCENE"
 echo "   PLY            : $OUT/${SCENE}.ply"
 echo "   Preview renders: $OUT/test/  (pbr/, normal/, renders/, gt/)"
 echo "   Checkpoints    : $CKPT_S1 , $CKPT_S2"
+echo "   Log            : $OUT/run.log  (send this if you hit a problem)"
 echo "=================================================================="
