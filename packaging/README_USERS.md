@@ -103,6 +103,17 @@ That's it. It will, in order: train the geometry, bake lighting occlusion, decom
 materials, render previews, and export the PLY. **This takes roughly 1–3 hours** depending
 on your GPU and scene size (the baking step alone is ~30–40 min).
 
+### Setting options on Windows: Command Prompt vs PowerShell
+
+Options are passed as environment variables (see below), and **the two Windows terminals set
+them differently**. Set the variable in the **same window** just before running the launcher:
+
+- **Command Prompt (cmd):** `set GSIR_RESOLUTION=2`
+- **PowerShell:** `$env:GSIR_RESOLUTION=2`
+
+In PowerShell, `set GSIR_RESOLUTION=2` does **nothing** (that is Command Prompt syntax), so the
+option is silently ignored. If a setting seems to have no effect, this is the usual reason.
+
 If you'd rather not use the launcher script, the raw command is:
 ```bash
 docker run --rm --gpus all \
@@ -143,7 +154,9 @@ training starts if it expects this. Two ways out, best quality first:
 ```bash
 # Linux/WSL:
 GSIR_DATA_DEVICE=cpu ./run.sh /path/to/my_scene /path/to/output
-# Windows:
+```
+```bat
+REM Windows Command Prompt (PowerShell: use  $env:GSIR_DATA_DEVICE="cpu"  instead):
 set GSIR_DATA_DEVICE=cpu
 run.bat C:\path\to\my_scene C:\path\to\output
 ```
@@ -152,7 +165,9 @@ run.bat C:\path\to\my_scene C:\path\to\output
 ```bash
 # Linux/WSL:
 GSIR_RESOLUTION=2 ./run.sh /path/to/my_scene /path/to/output
-# Windows:
+```
+```bat
+REM Windows Command Prompt (PowerShell: use  $env:GSIR_RESOLUTION="2"  instead):
 set GSIR_RESOLUTION=2
 run.bat C:\path\to\my_scene C:\path\to\output
 ```
