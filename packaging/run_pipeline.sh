@@ -24,6 +24,8 @@ ITERS_S1="${GSIR_ITERS_S1:-30000}"
 ITERS_S2="${GSIR_ITERS_S2:-35000}"
 OCCLU_RES="${GSIR_OCCLU_RES:-256}"
 OCCLUSION="${GSIR_OCCLUSION:-0.4}"
+EVAL_FLAG=""                              # GSIR_EVAL=1 computes PSNR/SSIM/LPIPS metrics
+[ -n "${GSIR_EVAL:-}" ] && EVAL_FLAG="--evaluate"
 
 # ---- sanity checks ------------------------------------------------------------
 if [ ! -d "$DATA" ]; then
@@ -117,7 +119,7 @@ python train.py -m "$OUT" -s "$DATA" \
 echo ""; echo ">>> [4/5] Preview renders (PBR + normals + material channels)"
 python render.py -m "$OUT" -s "$DATA" \
     --checkpoint "$CKPT_S2" -r "$RES" --pbr --gamma --indirect \
-    --data_device "$DATA_DEVICE"
+    --data_device "$DATA_DEVICE" $EVAL_FLAG
 
 echo ""; echo ">>> [5/5] Exporting material PLY"
 python extract_ply.py --checkpoint-file "$CKPT_S2" \

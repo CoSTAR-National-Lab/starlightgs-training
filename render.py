@@ -35,6 +35,7 @@ def render_set(
     tone: bool = False,
     gamma: bool = False,
     indirect: bool = False,
+    evaluate: bool = False,
 ) -> None:
     iteration = scene.loaded_iter
     if name == "train":
@@ -80,7 +81,16 @@ def render_set(
     psnr_avg = 0.0
     ssim_avg = 0.0
     lpips_avg = 0.0
-    lpips_fn = LPIPS(net="vgg").cuda()
+    if evaluate:
+        lpips_fn = LPIPS(net="vgg").cuda()
+
+    # Downsize to <=1600px for metrics: LPIPS runs out of memory on full-size views.
+    def eval_downscale(img: torch.Tensor) -> torch.Tensor:  # [3, H, W]
+        long_side = max(img.shape[-2:])
+        if long_side <= 1600:
+            return img[None]
+        s = 1600 / long_side
+        return F.interpolate(img[None], scale_factor=s, mode="bilinear", align_corners=False)
 
     if occlusion_volumes is not None:
         occlusion_ids = occlusion_volumes["occlusion_ids"]
@@ -193,11 +203,14 @@ def render_set(
             torchvision.utils.save_image(brdf_map, os.path.join(pbr_path, f"{idx:05d}_brdf.png"))
             torchvision.utils.save_image(render_rgb, os.path.join(pbr_path, f"{idx:05d}.png"))
 
-            psnr_avg += get_psnr(gt_image, render_rgb).mean().double()
-            ssim_avg += get_ssim(gt_image, render_rgb).mean().double()
-            lpips_avg += lpips_fn(gt_image, render_rgb).mean().double()
+            if evaluate:
+                # PSNR/SSIM are per-pixel and cheap, so score them at full resolution to
+                # match the paper. Only LPIPS is downsized, purely to fit in memory.
+                psnr_avg += get_psnr(gt_image, render_rgb).mean().double()
+                ssim_avg += get_ssim(gt_image, render_rgb).mean().double()
+                lpips_avg += lpips_fn(eval_downscale(gt_image), eval_downscale(render_rgb)).mean().double()
 
-    if pbr:
+    if pbr and evaluate:
         psnr = psnr_avg / len(views)
         ssim = ssim_avg / len(views)
         lpips = lpips_avg / len(views)
@@ -218,6 +231,7 @@ def launch(
     gamma: bool = False,
     indirect: bool = False,
     brdf_eval: bool = False,
+    evaluate: bool = False,
 ) -> None:
     gaussians = GaussianModel(dataset.sh_degree)
     scene = Scene(dataset, gaussians, shuffle=False)
@@ -276,6 +290,7 @@ def launch(
                 tone=tone,
                 gamma=gamma,
                 indirect=indirect,
+                evaluate=evaluate,
             )
         if not skip_test:
             render_set(
@@ -291,6 +306,7 @@ def launch(
                 tone=tone,
                 gamma=gamma,
                 indirect=indirect,
+                evaluate=evaluate,
             )
 
 
@@ -371,6 +387,7 @@ if __name__ == "__main__":
     parser.add_argument("--metallic", action="store_true", help="Enable metallic material reconstruction.")
     parser.add_argument("--indirect", action="store_true", help="Enable indirect diffuse modeling.")
     parser.add_argument("--brdf_eval", action="store_true", help="Enable to evaluate reconstructed BRDF.")
+    parser.add_argument("--evaluate", action="store_true", help="Compute PSNR/SSIM/LPIPS metrics (off by default).")
     args = get_combined_args(parser)
 
     model_path = os.path.dirname(args.checkpoint)
@@ -392,4 +409,5 @@ if __name__ == "__main__":
         gamma=args.gamma,
         indirect=args.indirect,
         brdf_eval=args.brdf_eval,
+        evaluate=args.evaluate,
     )

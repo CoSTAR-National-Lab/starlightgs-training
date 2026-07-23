@@ -37,7 +37,7 @@ docker run --rm --gpus all \
     --shm-size=16g \
     -e GSIR_SCENE="$SCENE" \
     -e GSIR_RESOLUTION -e GSIR_DATA_DEVICE -e GSIR_ITERS_S1 -e GSIR_ITERS_S2 \
-    -e GSIR_OCCLU_RES -e GSIR_OCCLUSION \
+    -e GSIR_OCCLU_RES -e GSIR_OCCLUSION -e GSIR_EVAL \
     -e GSIR_TARGET_FRAMES -e GSIR_MATCHER -e GSIR_CAMERA \
     -e GSIR_COLMAP_MAX_IMAGE_SIZE -e GSIR_COLMAP_GPU \
     -v "$DATA":/data \

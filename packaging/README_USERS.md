@@ -182,6 +182,8 @@ one is printed you're fine.
   rather than on the GPU. This keeps full image quality and greatly reduces GPU memory
   use, at the cost of slower training, so it is the best option if you run out of memory
   but want maximum quality. Needs enough system RAM to hold all the images.
+- `GSIR_EVAL` (off). Set to `1` to compute PSNR/SSIM/LPIPS quality metrics on the held-out
+  views. For reproducing the paper's numbers; not needed to produce the PLY or renders.
 - Calibration (raw photos/video): `GSIR_TARGET_FRAMES` (300, frames extracted from a video),
   `GSIR_MATCHER` (auto | exhaustive | sequential), `GSIR_CAMERA` (OPENCV),
   `GSIR_COLMAP_MAX_IMAGE_SIZE` (2000), `GSIR_COLMAP_GPU` (0).
