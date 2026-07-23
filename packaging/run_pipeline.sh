@@ -119,7 +119,7 @@ python train.py -m "$OUT" -s "$DATA" \
 echo ""; echo ">>> [4/5] Preview renders (PBR + normals + material channels)"
 python render.py -m "$OUT" -s "$DATA" \
     --checkpoint "$CKPT_S2" -r "$RES" --pbr --gamma --indirect \
-    --data_device "$DATA_DEVICE" $EVAL_FLAG
+    --data_device "$DATA_DEVICE" --skip_train $EVAL_FLAG
 
 echo ""; echo ">>> [5/5] Exporting material PLY"
 python extract_ply.py --checkpoint-file "$CKPT_S2" \
