@@ -174,6 +174,14 @@ run.bat C:\path\to\my_scene C:\path\to\output
 Try `GSIR_RESOLUTION=4` if `2` still runs out. **Note:** NeRF-OSR scenes must stay at
 `GSIR_RESOLUTION=1` (their calibration requires it).
 
+**Stopping a run / it kept using the GPU after I closed it**: on Windows, Ctrl-C and closing the
+window do **not** always stop the container, so it keeps training in the background. Stop it with:
+```
+docker stop gsir_<scene>
+```
+where `<scene>` is your scene folder's name (e.g. `docker stop gsir_cup`). On Linux/WSL, Ctrl-C
+in the launcher stops it.
+
 **"no images or video found"**: your folder has none of the inputs in step 3 (a video, loose
 photos, an `input/` folder, or an already-calibrated scene).
 

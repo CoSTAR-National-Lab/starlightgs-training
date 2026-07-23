@@ -29,8 +29,9 @@ echo Image : %IMAGE%
 echo.
 
 REM On Windows/Docker Desktop, files land as the current user already, so no --user needed.
+REM --name lets you stop the run with  docker stop gsir_<scene>  (Ctrl-C does not on Windows).
 REM %~n1 = the scene folder's name, so the output is named after YOUR folder (not /data).
-docker run --rm --gpus all --shm-size=16g ^
+docker run --rm --name gsir_%~n1 --gpus all --shm-size=16g ^
   -e GSIR_SCENE=%~n1 ^
   -e GSIR_RESOLUTION -e GSIR_DATA_DEVICE -e GSIR_ITERS_S1 -e GSIR_ITERS_S2 ^
   -e GSIR_OCCLU_RES -e GSIR_OCCLUSION -e GSIR_EVAL ^

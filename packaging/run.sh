@@ -29,10 +29,15 @@ echo "Output: $OUT"
 echo "Image : $IMAGE"
 echo
 
+# Name the container so it is easy to stop (docker stop gsir_<scene>). The fixed name also
+# blocks a second run of the same scene while one is in progress. Stop it on interrupt too.
+CONTAINER="gsir_${SCENE}"
+trap 'echo; echo "Stopping..."; docker stop "$CONTAINER" >/dev/null 2>&1; exit 130' INT TERM
+
 # --gpus all            : hand the GPU(s) to the container
 # --user $(id -u):$(id -g): write output files as YOU, not root
 # --shm-size            : PyTorch dataloader shared memory
-docker run --rm --gpus all \
+docker run --rm --name "$CONTAINER" --gpus all \
     --user "$(id -u):$(id -g)" \
     --shm-size=16g \
     -e GSIR_SCENE="$SCENE" \
