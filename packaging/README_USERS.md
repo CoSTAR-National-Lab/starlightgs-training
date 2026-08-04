@@ -47,7 +47,7 @@ If that prints your GPU, you're ready.
 ## 2. Get the image
 
 ```bash
-docker pull ghcr.io/costar/gs-ir:latest
+docker pull ghcr.io/costar-national-lab/relighting-gaussians-training:latest
 ```
 
 ---
@@ -119,7 +119,7 @@ If you'd rather not use the launcher script, the raw command is:
 docker run --rm --gpus all \
   -e GSIR_SCENE=my_scene \
   -v /path/to/my_scene:/data -v /path/to/output:/output \
-  ghcr.io/costar/gs-ir:latest /data
+  ghcr.io/costar-national-lab/relighting-gaussians-training:latest /data
 ```
 (`GSIR_SCENE` just names the output subfolder; the `run.sh`/`run.bat` launchers set it
 for you from your folder name.)
@@ -222,14 +222,14 @@ your output folder, you can re-do the final step without retraining.
 **Re-export the PLY from an existing run** (no retraining, it takes seconds, not hours):
 ```bash
 docker run --rm --gpus all -v /path/to/output:/output \
-  --entrypoint python ghcr.io/costar/gs-ir:latest \
+  --entrypoint python ghcr.io/costar-national-lab/relighting-gaussians-training:latest \
   extract_ply.py --checkpoint-file /output/<scene>/chkpnt35000.pth \
                  --output-path /output/<scene> --output-file <scene>.ply
 ```
 
 **Open a shell inside the container** (to inspect files or run commands manually):
 ```bash
-docker run --rm -it --entrypoint bash ghcr.io/costar/gs-ir:latest
+docker run --rm -it --entrypoint bash ghcr.io/costar-national-lab/relighting-gaussians-training:latest
 ```
 
 `--entrypoint <program>` replaces the automatic pipeline for that one run; everything after

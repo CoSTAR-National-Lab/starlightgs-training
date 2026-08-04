@@ -39,7 +39,7 @@ Full hardware notes and troubleshooting are in
 Get the image:
 
 ```bash
-docker pull ghcr.io/costar/gs-ir:latest
+docker pull ghcr.io/costar-national-lab/relighting-gaussians-training:latest
 ```
 
 (or load a shared `.tar` file, see the user guide).
@@ -89,7 +89,7 @@ The pipeline and its options live in [packaging/](packaging/) (`run_pipeline.sh`
 ## Building the image yourself
 
 ```bash
-docker build -f packaging/Dockerfile -t ghcr.io/costar/gs-ir:latest .
+docker build -f packaging/Dockerfile -t ghcr.io/costar-national-lab/relighting-gaussians-training:latest .
 ```
 
 Run this from the repository root. The build fetches a pinned nvdiffrast and compiles the CUDA

@@ -18,7 +18,7 @@ if "%~2"=="" (
   exit /b 1
 )
 
-set "IMAGE=ghcr.io/costar/gs-ir:latest"
+set "IMAGE=ghcr.io/costar-national-lab/relighting-gaussians-training:latest"
 if not "%GSIR_IMAGE%"=="" set "IMAGE=%GSIR_IMAGE%"
 
 if not exist "%~2" mkdir "%~2"
