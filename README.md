@@ -95,6 +95,28 @@ docker build -f packaging/Dockerfile -t ghcr.io/costar-national-lab/relighting-g
 Run this from the repository root. The build fetches a pinned nvdiffrast and compiles the CUDA
 extensions for the full GPU range.
 
+## For maintainers: publishing a new image
+
+The image is built and pushed to GHCR by GitHub Actions
+(`.github/workflows/publish-image.yml`), not by hand.
+
+**Release a new version:** push a semantic-version tag. CI builds the image and publishes
+`:MAJOR.MINOR.PATCH`, `:MAJOR.MINOR`, and `:latest` together, so the user-facing `:latest` is
+always the newest release.
+
+```bash
+git tag v1.0.0
+git push costar v1.0.0     # the CoSTAR remote
+```
+
+Use the full `vMAJOR.MINOR.PATCH` form (e.g. `v1.0.0`); a bare `v1` will not tag cleanly.
+
+**Test build without releasing:** the Actions tab, `publish-image`, Run workflow. This publishes
+`:<branch>` (e.g. `:main`) and leaves `:latest` untouched unless you tick "also tag as latest".
+
+The package is at `ghcr.io/costar-national-lab/relighting-gaussians-training` and is **private by
+default**; an org admin must set it public before users can pull without logging in.
+
 ## Repository layout
 
 | Path | What it is |
