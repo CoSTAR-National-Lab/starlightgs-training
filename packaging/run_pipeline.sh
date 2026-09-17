@@ -42,7 +42,7 @@ exec > >(tee -a "$OUT/run.log") 2>&1
 
 echo "=================================================================="
 echo " GS-IR run started $(date -u '+%Y-%m-%d %H:%M:%SZ')"
-echo "   gpu         : $(nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader 2>/dev/null | head -1)"
+echo "   gpu         : $(nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader 2>/dev/null | sed -n '1p')"
 echo "   torch/cuda  : $(python -c 'import torch; print(torch.__version__, "cuda", torch.version.cuda)' 2>/dev/null)"
 echo "   settings    : -r $RES  iters $ITERS_S1/$ITERS_S2  occlu_res $OCCLU_RES  occlusion $OCCLUSION"
 echo "=================================================================="
@@ -75,7 +75,7 @@ CKPT_S2="$OUT/chkpnt${ITERS_S2}.pth"
 if [ "$DATA_DEVICE" = "cuda" ]; then
     IMG_DIR="$DATA/images"
     [ -d "$DATA/train/rgb" ] && IMG_DIR="$DATA/train/rgb"
-    VRAM_MB=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | head -1)
+    VRAM_MB=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | sed -n '1p')
     python - "$IMG_DIR" "$RES" "${VRAM_MB:-0}" <<'PY' || true
 import glob, sys
 from PIL import Image
