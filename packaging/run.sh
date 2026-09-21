@@ -37,7 +37,8 @@ trap 'echo; echo "Stopping..."; docker stop "$CONTAINER" >/dev/null 2>&1; exit 1
 # --gpus all            : hand the GPU(s) to the container
 # --user $(id -u):$(id -g): write output files as YOU, not root
 # --shm-size            : PyTorch dataloader shared memory
-docker run --rm --name "$CONTAINER" --gpus all \
+docker run --rm --name "$CONTAINER" --device nvidia.com/gpu=all \
+    --ulimit nofile=65535:65535 \
     --user "$(id -u):$(id -g)" \
     --shm-size=16g \
     -e GSIR_SCENE="$SCENE" \
@@ -45,6 +46,8 @@ docker run --rm --name "$CONTAINER" --gpus all \
     -e GSIR_OCCLU_RES -e GSIR_OCCLUSION -e GSIR_EVAL \
     -e GSIR_TARGET_FRAMES -e GSIR_MATCHER -e GSIR_CAMERA \
     -e GSIR_COLMAP_MAX_IMAGE_SIZE -e GSIR_COLMAP_GPU \
+    -e GSIR_DENSIFY_UNTIL -e GSIR_POSITION_LR_MAX_STEPS \
     -v "$DATA":/data \
     -v "$OUT":/output \
-    "$IMAGE" /data
+    "$IMAGE" /data \
+    -lc 'ulimit -n'

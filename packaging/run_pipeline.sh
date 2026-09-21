@@ -22,10 +22,21 @@ RES="${GSIR_RESOLUTION:-1}"               # 1 = full resolution; 2 or 4 if VRAM 
 DATA_DEVICE="${GSIR_DATA_DEVICE:-cuda}"   # cpu keeps images in RAM: full quality, slower
 ITERS_S1="${GSIR_ITERS_S1:-30000}"
 ITERS_S2="${GSIR_ITERS_S2:-35000}"
+# Preserve the stock GS-IR ratios by default: densify for the first half of Stage 1,
+# and decay the position LR across all of Stage 1. Both remain overrideable.
+DENSIFY_UNTIL="${GSIR_DENSIFY_UNTIL:-$(( ITERS_S1 / 2 ))}"
+POSITION_LR_MAX_STEPS="${GSIR_POSITION_LR_MAX_STEPS:-$ITERS_S1}"
 OCCLU_RES="${GSIR_OCCLU_RES:-256}"
 OCCLUSION="${GSIR_OCCLUSION:-0.4}"
 EVAL_FLAG=""                              # GSIR_EVAL=1 computes PSNR/SSIM/LPIPS metrics
 [ -n "${GSIR_EVAL:-}" ] && EVAL_FLAG="--evaluate"
+
+# Stage 2 --iterations is an absolute final iteration, not an additional count.
+if [ "$ITERS_S2" -le "$ITERS_S1" ]; then
+    echo "ERROR: GSIR_ITERS_S2 ($ITERS_S2) must be greater than GSIR_ITERS_S1 ($ITERS_S1)." >&2
+    echo "       Example: Stage 1 = 150000 and 25000 PBR iterations -> GSIR_ITERS_S2=175000." >&2
+    exit 1
+fi
 
 # ---- sanity checks ------------------------------------------------------------
 if [ ! -d "$DATA" ]; then
@@ -44,7 +55,8 @@ echo "=================================================================="
 echo " GS-IR run started $(date -u '+%Y-%m-%d %H:%M:%SZ')"
 echo "   gpu         : $(nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader 2>/dev/null | sed -n '1p')"
 echo "   torch/cuda  : $(python -c 'import torch; print(torch.__version__, "cuda", torch.version.cuda)' 2>/dev/null)"
-echo "   settings    : -r $RES  iters $ITERS_S1/$ITERS_S2  occlu_res $OCCLU_RES  occlusion $OCCLUSION"
+echo "   settings    : -r $RES  iters $ITERS_S1/$ITERS_S2  densify_until $DENSIFY_UNTIL  pos_lr_steps $POSITION_LR_MAX_STEPS"
+echo "                 occlu_res $OCCLU_RES  occlusion $OCCLUSION"
 echo "=================================================================="
 
 # ---- format detection ---------------------------------------------------------
@@ -99,6 +111,9 @@ fi
 
 echo ""; echo ">>> [1/5] Stage 1 - geometry + appearance (${ITERS_S1} iters)"
 python train.py -m "$OUT" -s "$DATA" --iterations "$ITERS_S1" --eval -r "$RES" \
+    --pbr_iteration "$ITERS_S1" \
+    --densify_until_iter "$DENSIFY_UNTIL" \
+    --position_lr_max_steps "$POSITION_LR_MAX_STEPS" \
     --data_device "$DATA_DEVICE"
 
 echo ""; echo ">>> [2/5] Baking occlusion volumes (auto-bound)"
@@ -114,6 +129,9 @@ echo "    using baked bound: $BOUND"
 python train.py -m "$OUT" -s "$DATA" \
     --start_checkpoint "$CKPT_S1" \
     --iterations "$ITERS_S2" --eval --gamma --indirect -r "$RES" \
+    --pbr_iteration "$ITERS_S1" \
+    --densify_until_iter "$DENSIFY_UNTIL" \
+    --position_lr_max_steps "$POSITION_LR_MAX_STEPS" \
     --bound "$BOUND" --data_device "$DATA_DEVICE"
 
 echo ""; echo ">>> [4/5] Preview renders (PBR + normals + material channels)"
