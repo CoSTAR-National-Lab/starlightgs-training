@@ -22,22 +22,105 @@ No Python, no coding.
   If yours is older, update it from [nvidia.com/drivers](https://www.nvidia.com/en-us/drivers/)
   (on Windows the NVIDIA App does it in a click; a driver update is reversible).
 
-**Not supported:** Apple Silicon / Intel Macs (no NVIDIA GPU = no CUDA), AMD GPUs.
+**Not supported:** Apple Silicon / Intel Macs, AMD GPUs.
 On those machines this tool cannot run at all.
 
 **Software**
 
-- **Windows 10/11:** install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-  and enable the WSL2 + GPU integration (Docker Desktop → Settings → Resources → WSL, and
-  make sure the NVIDIA driver is installed on Windows).
+- **Windows 10/11:** available through WSL2. Follow additional Windows-only steps below.
 - **Linux:** install Docker + the
   [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
   (this is what lets containers see the GPU).
 
+### Docker Installation - Linux & Windows
+
+0. Install WSL2 - **Windows Only**
+```bash
+wsl --install
+```
+1. Install Docker
+```bash
+sudo apt update
+```
+
+```bash
+sudo apt install -y ca-certificates curl
+```
+
+```bash
+sudo install -m 0755 -d /etc/apt/keyrings
+```
+
+```bash
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+  -o /etc/apt/keyrings/docker.asc
+```
+
+```bash
+sudo chmod a+r /etc/apt/keyrings/docker.asc 
+```
+
+```bash
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+```
+
+```bash
+sudo apt update
+```
+
+```bash
+sudo apt install -y \
+    docker-ce \
+    docker-ce-cli \
+    containerd.io \
+    docker-buildx-plugin \
+    docker-compose-plugin
+```
+
+```bash
+sudo service docker start
+```
+Check that docker is correctly installed by running:
+```bash
+sudo docker run hello-world
+```
+
+2. Install `nvidia-ctk`:
+
+```bash
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey \
+  | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+```
+
+```bash
+curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list \
+  | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' \
+  | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+```
+
+```bash
+sudo apt update
+```
+
+```bash
+sudo apt install -y nvidia-container-toolkit
+```
+
+```bash
+sudo nvidia-ctk runtime configure --runtime=docker
+```
+
+```bash
+sudo service docker restart
+```
+
 Check the GPU is visible to Docker:
 
 ```bash
-docker run --rm --gpus all nvcr.io/nvidia/pytorch:25.03-py3 nvidia-smi
+sudo docker run --rm --gpus all nvcr.io/nvidia/pytorch:25.03-py3 nvidia-smi
 ```
 
 If that prints your GPU, you're ready.
@@ -46,8 +129,14 @@ If that prints your GPU, you're ready.
 
 ## 2. Get the image
 
+Until the repository is made public, you will need to login to ghcr.io before pulling the image. This is done with a Personal Access Token (classic), with the read:packages scope (github.com → Settings → Developer settings → Tokens (classic)). 
+
 ```bash
-docker pull ghcr.io/costar-national-lab/relighting-gaussians-training:latest
+echo <YOUR_TOKEN> | sudo docker login ghcr.io -u <YOUR_USERNAME> --password-stdin
+```
+
+```bash
+sudo docker pull ghcr.io/costar-national-lab/relighting-gaussians-training:latest
 ```
 
 ---
@@ -91,28 +180,12 @@ Use the launcher for your OS. Give it your **scene folder** and an **output fold
 
 **Linux / macOS-shell / WSL:**
 ```bash
-./run.sh /path/to/my_scene /path/to/output
-```
-
-**Windows (Command Prompt):**
-```bat
-run.bat C:\path\to\my_scene C:\path\to\output
+sudo ./run.sh /path/to/my_scene /path/to/output
 ```
 
 That's it. It will, in order: train the geometry, bake lighting occlusion, decompose the
 materials, render previews, and export the PLY. **This takes roughly 1–3 hours** depending
 on your GPU and scene size (the baking step alone is ~30–40 min).
-
-### Setting options on Windows: Command Prompt vs PowerShell
-
-Options are passed as environment variables (see below), and **the two Windows terminals set
-them differently**. Set the variable in the **same window** just before running the launcher:
-
-- **Command Prompt (cmd):** `set GSIR_RESOLUTION=2`
-- **PowerShell:** `$env:GSIR_RESOLUTION=2`
-
-In PowerShell, `set GSIR_RESOLUTION=2` does **nothing** (that is Command Prompt syntax), so the
-option is silently ignored. If a setting seems to have no effect, this is the usual reason.
 
 If you'd rather not use the launcher script, the raw command is:
 ```bash
@@ -155,32 +228,14 @@ training starts if it expects this. Two ways out, best quality first:
 # Linux/WSL:
 GSIR_DATA_DEVICE=cpu ./run.sh /path/to/my_scene /path/to/output
 ```
-```bat
-REM Windows Command Prompt (PowerShell: use  $env:GSIR_DATA_DEVICE="cpu"  instead):
-set GSIR_DATA_DEVICE=cpu
-run.bat C:\path\to\my_scene C:\path\to\output
-```
 
 **2. Or lower the resolution** (faster, but less detail):
 ```bash
 # Linux/WSL:
 GSIR_RESOLUTION=2 ./run.sh /path/to/my_scene /path/to/output
 ```
-```bat
-REM Windows Command Prompt (PowerShell: use  $env:GSIR_RESOLUTION="2"  instead):
-set GSIR_RESOLUTION=2
-run.bat C:\path\to\my_scene C:\path\to\output
-```
 Try `GSIR_RESOLUTION=4` if `2` still runs out. **Note:** NeRF-OSR scenes must stay at
 `GSIR_RESOLUTION=1` (their calibration requires it).
-
-**Stopping a run / it kept using the GPU after I closed it**: on Windows, Ctrl-C and closing the
-window do **not** always stop the container, so it keeps training in the background. Stop it with:
-```
-docker stop gsir_<scene>
-```
-where `<scene>` is your scene folder's name (e.g. `docker stop gsir_cup`). On Linux/WSL, Ctrl-C
-in the launcher stops it.
 
 **"no images or video found"**: your folder has none of the inputs in step 3 (a video, loose
 photos, an `input/` folder, or an already-calibrated scene).

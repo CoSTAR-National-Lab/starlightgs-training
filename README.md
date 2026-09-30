@@ -28,10 +28,12 @@ PLY. Everything runs from a single Docker command, with no Python or manual setu
 
 * An NVIDIA GPU from the RTX 20-series (2018) through the 50-series, or a datacentre card
   (A100, H100, H200), with NVIDIA driver 570 or newer, and Docker.
-* Linux, or Windows 10 or 11 with WSL2 and Docker Desktop.
+* Linux, or WSL2 if on Windows.
 * Apple Silicon and Intel Macs are not supported (no CUDA), and neither are AMD GPUs.
 
-Full hardware notes and troubleshooting are in
+If on Windows, see [packaging/README_USERS.md](packaging/README_USERS.md) for a guide on installing WSL2 and Docker before continuing with the Quick Start.
+
+Full hardware notes and troubleshooting are also in
 [packaging/README_USERS.md](packaging/README_USERS.md).
 
 ## Quick start
@@ -44,11 +46,10 @@ docker pull ghcr.io/costar-national-lab/relighting-gaussians-training:latest
 
 (or load a shared `.tar` file, see the user guide).
 
-You also need the launcher script for your operating system. It is a small wrapper that fills in
+You also need the launcher script. It is a small wrapper that fills in
 the Docker options for you, so copy it onto your machine from [packaging/](packaging/):
 
-* Linux, WSL or a macOS shell: `run.sh`
-* Windows: `run.bat`
+* Linux and WSL: `run.sh`
 
 Then run it on a scene folder (a video, loose photos, or an already calibrated dataset) and an
 output folder:
@@ -58,18 +59,13 @@ output folder:
 ./run.sh /path/to/scene /path/to/output
 ```
 
-```bat
-REM Windows
-run.bat C:\path\to\scene C:\path\to\output
-```
-
 The outputs go to `output/<scene>/`: the material `.ply`, preview renders (in `test/`), and the
 training checkpoints.
 
 ## Importing into Unreal Engine
 
-The pipeline exports a material PLY. This is not a native Unreal format, so to bring it in you
-use the importer plugin developed by the University of Abertay as part of CoSTAR. The plugin
+The pipeline exports a material PLY. This is not a native Unreal format, so to bring it in 
+use the plugin developed by Abertay University as part of CoSTAR. The plugin
 reads the PLY and its material channels (albedo, roughness, metallic) into Unreal.
 
 ## How it works
