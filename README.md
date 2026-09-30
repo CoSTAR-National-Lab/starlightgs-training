@@ -41,7 +41,7 @@ Full hardware notes and troubleshooting are also in
 Get the image:
 
 ```bash
-docker pull ghcr.io/costar-national-lab/relighting-gaussians-training:latest
+sudo docker pull ghcr.io/costar-national-lab/relighting-gaussians-training:latest
 ```
 
 (or load a shared `.tar` file, see the user guide).
@@ -56,7 +56,7 @@ output folder:
 
 ```bash
 # Linux or WSL
-./run.sh /path/to/scene /path/to/output
+sudo ./run.sh /path/to/scene /path/to/output
 ```
 
 The outputs go to `output/<scene>/`: the material `.ply`, preview renders (in `test/`), and the
