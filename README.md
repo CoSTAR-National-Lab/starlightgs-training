@@ -27,21 +27,31 @@ PLY. Everything runs from a single Docker command, with no Python or manual setu
 ## Requirements
 
 * An NVIDIA GPU from the RTX 20-series (2018) through the 50-series, or a datacentre card
-  (A100, H100, H200), with NVIDIA driver 570 or newer, and Docker.
+  (A100, H100, H200), with NVIDIA driver 570 or newer.
 * Linux, or WSL2 if on Windows.
+* Docker and nvidia-ctk installed. See installation instructions for Linux and Windows in [packaging/README_USERS.md](packaging/README_USERS.md).
 * Apple Silicon and Intel Macs are not supported (no CUDA), and neither are AMD GPUs.
 
 If on Windows, see [packaging/README_USERS.md](packaging/README_USERS.md) for a guide on installing WSL2 and Docker before continuing with the Quick Start.
+> [CAUTION]
+> Do not use Docker Desktop to run on Windows.
+> Please follow the instructions in [packaging/README_USERS.md](packaging/README_USERS.md).
 
 Full hardware notes and troubleshooting are also in
 [packaging/README_USERS.md](packaging/README_USERS.md).
 
 ## Quick start
 
-Get the image:
+Until the repository is public, you will need to log in to ghcr.io. Generate a Personal Access Token (classic), with the read:packages scope (github.com → Settings → Developer settings → Tokens (classic)) and then run the following command:
 
 ```bash
-sudo docker pull ghcr.io/costar-national-lab/relighting-gaussians-training:latest
+echo <YOUR_TOKEN> | sudo docker login ghcr.io -u <YOUR_USERNAME> --password-stdin
+```
+
+Then you can get the image:
+
+```bash
+sudo sudo docker pull ghcr.io/costar-national-lab/relighting-gaussians-training:latest
 ```
 
 (or load a shared `.tar` file, see the user guide).

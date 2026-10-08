@@ -32,6 +32,10 @@ On those machines this tool cannot run at all.
   [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
   (this is what lets containers see the GPU).
 
+> [CAUTION]
+> Do not use Docker Desktop to run on Windows.
+> Please follow the instructions below to install Docker for Linux in WSL.
+
 ### Docker Installation - Linux & Windows
 
 0. Install WSL2 - **Windows Only**
@@ -176,7 +180,12 @@ slow calibration. **COLMAP calibration adds ~10–60 min** on the first run and 
 
 ## 4. Run it
 
-Use the launcher for your OS. Give it your **scene folder** and an **output folder**:
+You will need the launcher script. It is a small wrapper that fills in
+the Docker options for you, so copy it onto your machine from [packaging/](packaging/):
+
+* Linux and WSL: `run.sh`
+
+Give it your **scene folder** and an **output folder**:
 
 **Linux / macOS-shell / WSL:**
 ```bash
