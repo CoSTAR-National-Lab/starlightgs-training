@@ -1,11 +1,17 @@
-# GS-IR (CoSTAR)
+# StarLightGS Training - Built on GS-IR
+
+The training pipeline to produce relightable gaussian splat assets for [StarLightGS](https://github.com/CoSTAR-National-Lab/relighting-gaussians-unreal).
+
+> [!TIP]
+> Check out our [Unreal Engine Sample](https://github.com/CoSTAR-National-Lab/starlightgs-sample) for real-time relighting of Gaussian splats, using [StarLightGS](https://github.com/CoSTAR-National-Lab/relighting-gaussians-unreal), produced by this training pipeline.
 
 A containerised fork of [GS-IR](https://github.com/lzhnb/GS-IR) (3D Gaussian Splatting for
 Inverse Rendering). You give it photos or a video of a scene, and it reconstructs the geometry
 and physically based materials (albedo, roughness, metallic, normals) and exports a material
 PLY. Everything runs from a single Docker command, with no Python or manual setup.
 
-> **Non-commercial use only.** This project bundles the Inria 3D Gaussian Splatting rasterizer,
+> [!IMPORTANT] **Non-commercial use only.**
+> This project bundles the Inria 3D Gaussian Splatting rasterizer,
 > which is licensed for research and evaluation purposes only. Do not use it, or its outputs,
 > for commercial work without the appropriate licence. See
 > [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
