@@ -10,7 +10,8 @@ Inverse Rendering). You give it photos or a video of a scene, and it reconstruct
 and physically based materials (albedo, roughness, metallic, normals) and exports a material
 PLY. Everything runs from a single Docker command, with no Python or manual setup.
 
-> [!IMPORTANT] **Non-commercial use only.**
+> [!IMPORTANT] 
+> **Non-commercial use only.**
 > This project bundles the Inria 3D Gaussian Splatting rasterizer,
 > which is licensed for research and evaluation purposes only. Do not use it, or its outputs,
 > for commercial work without the appropriate licence. See
