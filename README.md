@@ -14,8 +14,9 @@ PLY. Everything runs from a single Docker command, with no Python or manual setu
 > **Non-commercial use only.**
 > This project bundles the Inria 3D Gaussian Splatting rasterizer,
 > which is licensed for research and evaluation purposes only. Do not use it, or its outputs,
-> for commercial work without the appropriate licence. See
-> [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+> for commercial work without the appropriate licence. Please read the Inria license [here](https://github.com/graphdeco-inria/gaussian-splatting/blob/main/LICENSE.md).
+>
+> See [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for full license details of all third-party software included in this repository.
 
 ## What this fork adds to GS-IR
 
