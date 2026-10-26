@@ -1,9 +1,9 @@
 # StarLightGS Training - Built on GS-IR
 
-The training pipeline to produce relightable gaussian splat assets for [StarLightGS](https://github.com/CoSTAR-National-Lab/relighting-gaussians-unreal).
+The training pipeline to produce relightable gaussian splat assets for [StarLightGS](https://github.com/CoSTAR-National-Lab/starlightgs).
 
 > [!TIP]
-> Check out our [Unreal Engine Sample](https://github.com/CoSTAR-National-Lab/starlightgs-sample) for real-time relighting of Gaussian splats, using [StarLightGS](https://github.com/CoSTAR-National-Lab/relighting-gaussians-unreal), produced by this training pipeline.
+> Check out our [Unreal Engine Sample](https://github.com/CoSTAR-National-Lab/starlightgs-sample) for real-time relighting of Gaussian splats, using [StarLightGS](https://github.com/CoSTAR-National-Lab/starlightgs), produced by this training pipeline.
 
 A containerised fork of [GS-IR](https://github.com/lzhnb/GS-IR) (3D Gaussian Splatting for
 Inverse Rendering). You give it photos or a video of a scene, and it reconstructs the geometry
@@ -59,7 +59,7 @@ echo <YOUR_TOKEN> | sudo docker login ghcr.io -u <YOUR_USERNAME> --password-stdi
 Then you can get the image:
 
 ```bash
-sudo sudo docker pull ghcr.io/costar-national-lab/relighting-gaussians-training:latest
+sudo sudo docker pull ghcr.io/costar-national-lab/starlightgs-training:latest
 ```
 
 (or load a shared `.tar` file, see the user guide).
@@ -103,7 +103,7 @@ The pipeline and its options live in [packaging/](packaging/) (`run_pipeline.sh`
 ## Building the image yourself
 
 ```bash
-docker build -f packaging/Dockerfile -t ghcr.io/costar-national-lab/relighting-gaussians-training:latest .
+docker build -f packaging/Dockerfile -t ghcr.io/costar-national-lab/starlightgs-training:latest .
 ```
 
 Run this from the repository root. The build fetches a pinned nvdiffrast and compiles the CUDA
@@ -128,7 +128,7 @@ Use the full `vMAJOR.MINOR.PATCH` form (e.g. `v1.0.0`); a bare `v1` will not tag
 **Test build without releasing:** the Actions tab, `publish-image`, Run workflow. This publishes
 `:<branch>` (e.g. `:main`) and leaves `:latest` untouched unless you tick "also tag as latest".
 
-The package is at `ghcr.io/costar-national-lab/relighting-gaussians-training` and is **private by
+The package is at `ghcr.io/costar-national-lab/starlightgs-training` and is **private by
 default**; an org admin must set it public before users can pull without logging in.
 
 ## Repository layout

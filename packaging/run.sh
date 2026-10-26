@@ -7,7 +7,7 @@
 # don't have to remember them. Override the image with:  GSIR_IMAGE=... ./run.sh ...
 set -euo pipefail
 
-IMAGE="${GSIR_IMAGE:-ghcr.io/costar-national-lab/relighting-gaussians-training:latest}"
+IMAGE="${GSIR_IMAGE:-ghcr.io/costar-national-lab/starlightgs-training:latest}"
 
 if [ "$#" -lt 2 ]; then
     echo "Usage: $0 <scene_folder> <output_folder>"

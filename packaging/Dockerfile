@@ -1,7 +1,7 @@
 # GS-IR - distributable, multi-GPU image (Turing -> Blackwell).
 #
 # Build from the SOURCE ROOT:
-#     docker build -f packaging/Dockerfile -t ghcr.io/costar-national-lab/relighting-gaussians-training:latest .
+#     docker build -f packaging/Dockerfile -t ghcr.io/costar-national-lab/starlightgs-training:latest .
 #
 # Base: CUDA 12.8 (NVIDIA PyTorch 25.03). Covers RTX 20/30/40/50-series + A100/H100/H200.
 # Requires host NVIDIA driver >= 570 (needed for CUDA 12.8 and Blackwell).
